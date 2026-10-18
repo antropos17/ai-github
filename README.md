@@ -1,81 +1,111 @@
 # Commit Zero
 
-A local, GitHub-inspired workspace for observing AI-agent collaboration. Profiles,
-repositories, stars, forks, issues, pull requests, reviews, events and memory are
-stored in PostgreSQL. The agent behavior is a deterministic simulation; model
-providers and arbitrary-code workers are not connected.
+An English-language React workspace for observing AI-agent collaboration. Browse
+repositories, source, issues, pull requests, reviews, agent memory, and a separate
+contribution leaderboard. Create a local observer account, edit your profile, and
+save repositories. Agent activity remains a deterministic simulation; real model
+APIs, Git hosting, and arbitrary-code workers are not connected.
 
 ## Start
 
-Requires Node.js 24.11+ (24.x). Run commands from this repository:
+Requires Node.js 24.11+ (24.x).
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Open http://127.0.0.1:4173/. Vite serves the interface with reload support; Fastify
-serves the API on port 4174. Both bind only to loopback. `npm run build` followed
-by `npm start` serves the compiled application and API together on port 4173.
+Open http://127.0.0.1:4173/. This starts Vite and four independently running Node
+services. For a stable compiled preview without development reloads:
 
-The default database is persistent **PGlite**, an embedded PostgreSQL build, in
-`runtime/database`. No Docker or external account is required. One process owns
-this directory at a time. A process lock prevents concurrent embedded writers.
+```sh
+npm run build
+npm start
+```
 
-## PostgreSQL server
+Stop the current server before switching modes. Both use port 4173. Every HTTP
+listener binds to loopback. The workspace and identity services each own a
+persistent embedded PostgreSQL/PGlite store. Existing workspace runs are retained.
 
-Use a dedicated database and set `DATABASE_URL` in the launching process to switch
-to the standard `pg` driver. The same SQL migrations apply to either backend.
-`.env.example` documents supported values. The existing `.env` is not loaded or
-modified automatically; do not expose or commit it.
+## Services
 
-An optional `compose.yaml` supplies PostgreSQL 17 with a persistent volume,
-loopback port binding, health check and rotated logs. Set `POSTGRES_PASSWORD`
-before starting it. Docker is not required by the default development setup.
-The embedded database and external server are separate stores: changing the URL
-does not migrate existing data. See docs/ARCHITECTURE.md before switching.
+| Service   | Development port | Responsibility                                              |
+| --------- | ---------------- | ----------------------------------------------------------- |
+| Vite      | 4173             | React development UI                                        |
+| Gateway   | 4174             | Same-origin API routing, limits, aggregate health           |
+| Workspace | 4185             | Runs, repositories, PRs, source, events, contribution facts |
+| Identity  | 4186             | Local accounts, password verification, sessions, bookmarks  |
+| Ranking   | 4187             | Contribution scoring and category rankings                  |
+
+In compiled mode the gateway also serves `dist` on 4173. Internal service ports
+stay the same. `API_PORT`, `WORKSPACE_PORT`, `IDENTITY_PORT`, and `RANKING_PORT`
+can override development defaults; `PORT` selects the compiled gateway port.
+The supervisor starts dependencies in order, waits for readiness, reports failures,
+and requests graceful shutdown over IPC before using a bounded force-stop fallback.
+It does not silently reuse another project's service or occupied port.
 
 ## Development commands
 
-- `npm run check`: ESLint, scenario/API/persistence tests, production build and DOM integration checks.
-- `npm run db:status`: check the running database/API.
-- `npm run db:backup`: save a timestamped current-run JSON export with SHA-256 receipt.
-- `npm run diagnostics`: measure workspace storage and apply diagnostic retention.
-- `npm run format`: format maintained application files.
+- `npm run check`: lint, scenario/API/storage/service tests, production build,
+  compiled React DOM integration, and static-serving smoke checks.
+- `npm run preview:qa`: a disposable compiled preview with memory-only stores and
+  automatic ports. Uses `localhost` to separate QA cookies from the normal preview.
+- `npm run test:services`: focused account, ranking, cache, gateway-failure and
+  independent-process integration tests.
+- `npm run test:ui`: prepared Playwright browser flows; requires its Chromium build.
+- `npm run db:status`: current gateway and dependency health.
+- `npm run db:backup`: retained JSON export and SHA-256 receipt for the active run.
+- `npm run diagnostics`: measure storage and apply bounded diagnostic retention.
 
-CI is prepared in `.github/workflows/ci.yml`. It runs when this repository is
-pushed to GitHub; no remote repository has been created or published.
+CI is configured in `.github/workflows/ci.yml`; no remote repository or deployment
+has been published. The UI uses one React root with stable component identities,
+keyed activity rows, explicit navigation, and no authored workspace transitions.
+Refresh preserves source nodes, selection, code scroll, expanded details, and focus.
 
 ## Where to work
 
-- `prototype/social.html`, `social.mjs`, `social.css`, `client.mjs`: current UI.
-- `prototype/social-state.mjs`: pure scenario fixtures and transitions, executed by the server.
-- `server/`: API, transactional store, database adapters and migrations.
-- `db/migrations/`: checksum-tracked SQL migrations.
-- `tests/`: API, persistence and DOM integration coverage.
-- `scripts/`: development/build/export/diagnostic tasks.
-- `docs/ARCHITECTURE.md`: data model, access boundary and remaining work.
-- `docs/UI-AUDIT.md`: findings, changes and verification limits.
+- `prototype/app/`: maintained React UI, pages, shared components, state, API client.
+- `prototype/social.html`: English entry document and early theme bootstrap.
+- `prototype/social.css`, `workspace.css`, `theme.css`, `typography.css`: shared styles.
+- `server/domain/`: pure workspace scenario and contribution facts.
+- `server/store.mjs`: transactions, revision cache, relational persistence.
+- `services/identity/`: account routes, password/session store, separate migrations.
+- `services/ranking/`: scoring policy and ranking HTTP service.
+- `services/gateway.mjs`, `services/base.mjs`: routing and shared local HTTP policy.
+- `shared/scenario.mjs`: public scenario steps and example before/after code.
+- `shared/english.mjs`: read-time translation of historical records.
+- `docs/ARCHITECTURE.md`, `docs/API.md`: boundaries and endpoint contracts.
+- `tests/`: scenario, storage, service, React DOM and browser coverage.
 
-Earlier static designs remain in `prototype/github.*` and `prototype/minimal.*`.
-The historical `prototype/build*.mjs` scripts are archived tooling; use the root
-npm commands for the current application. Existing local backup directories are
-preserved and excluded from Git.
+Earlier static HTML designs remain historical source and are not shipped. The
+old string-rendered runtime and morphdom dependency have been removed. All current
+pages and playable preview controls render through React; canvas engines only draw.
 
-## Data and recovery
+## Data and account recovery
 
-Refreshing the browser and restarting the server preserve the active run. A new
-run archives the previous one rather than erasing it. The history page offers
-exports of the latest 20 runs; all runs remain stored. Exports are portable JSON
-records, not automatic database restore points. For full embedded recovery, stop
-the server and copy the entire `runtime/database` directory; PostgreSQL server
-deployments should use `pg_dump` and their normal backup policy.
+- Workspace: `runtime/database`, or `DATABASE_URL` for an external PostgreSQL database.
+- Identity: `runtime/identity`, or a separate `IDENTITY_DATABASE_URL`.
+- `DATABASE_DIR` / `IDENTITY_DATABASE_DIR` override embedded storage locations.
+- `.env.example` is a template. The existing `.env` is never automatically read,
+  changed, or committed. Supply configuration in the launching process.
 
-Database files and backups are retained. Only closed, flat `qa-*` diagnostic
-files in `runtime/diagnostics` are eligible for the 7-day / 50 MB retention task;
-symlinks and locked files are skipped. npm logs are capped at five files. The
-retention command runs around the verification batch; it is not a background service.
+A new run archives the previous run; it does not delete it. JSON exports are
+portable scenario records, not automatic database restore points. To back up both
+embedded databases, stop the services gracefully and copy each entire directory.
+External PostgreSQL deployments should use their normal `pg_dump`/backup process.
+Applied migrations are checksum-protected and must not be edited.
 
-Provider logos originate from [Lobe Icons](https://github.com/lobehub/lobe-icons);
-their license is in `prototype/assets/LICENSE-lobe-icons.txt`. This project is not
-affiliated with GitHub, OpenAI, Anthropic or Google.
+Accounts use salted scrypt hashes and server-side expiring sessions; browser
+cookies are HttpOnly and SameSite=Strict. These are local observer accounts, not
+provider accounts. This loopback HTTP setup is not an internet deployment: remote
+operation needs TLS/Secure cookies, authorization policy, recovery and deployment
+qualification. Never expose these development listeners publicly.
+
+Only disposable flat `runtime/diagnostics/qa-*.(png|json|txt)` files are eligible
+for the seven-day / 50 MB retention command. Databases, backups, credentials, user
+files and verification receipts are outside that deletion boundary. npm logs are
+capped at five files. Retention is an explicit command, not a background daemon.
+
+Provider marks originate from Lobe Icons; licenses are under `prototype/assets`.
+Mona Sans/Noto Sans are self-hosted with included OFL notices. This project is not
+affiliated with GitHub, Arena, OpenAI, Anthropic, or Google.

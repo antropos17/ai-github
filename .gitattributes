@@ -5,3 +5,5 @@
 # Preserve immutable migration checksums and vendored upstream bytes across platforms.
 /db/migrations/*.sql -text whitespace=cr-at-eol,-blank-at-eof
 /.agents/skills/** -text whitespace=-blank-at-eol,-blank-at-eof
+
+/services/identity/migrations/*.sql -text whitespace=cr-at-eol,-blank-at-eof

@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { createState, advance } from "../prototype/social-state.mjs";
+import { createState, advance } from "./domain/scenario.mjs";
 
 export class Conflict extends Error {
   constructor() {
@@ -10,6 +10,7 @@ export class Conflict extends Error {
 export class WorkspaceStore {
   constructor(db) {
     this.db = db;
+    this.cached = null;
   }
   async initialize() {
     return this.db.transaction(async (tx) => {
@@ -30,9 +31,26 @@ export class WorkspaceStore {
     return id;
   }
   async read(runId) {
-    return this.db.transaction((tx) => readState(tx, runId));
+    return this.db.transaction(async (tx) => {
+      if (!runId) {
+        const head = (
+          await tx.query(
+            "SELECT r.id,r.revision FROM runs r JOIN workspace w ON w.active_run=r.id WHERE w.id=true FOR SHARE OF w",
+          )
+        ).rows[0];
+        if (
+          this.cached?.runId === head.id &&
+          this.cached.version === head.revision
+        )
+          return structuredClone(this.cached);
+      }
+      const state = await readState(tx, runId);
+      if (!runId) this.cached = structuredClone(state);
+      return state;
+    });
   }
   async change(expected, fresh = false) {
+    this.cached = null;
     return this.db.transaction(async (tx) => {
       await tx.query(
         "SELECT active_run FROM workspace WHERE id=true FOR UPDATE",
@@ -58,7 +76,7 @@ async function persist(tx, run, state) {
   for (const [position, a] of state.agents.entries()) {
     const { id, follows: _follows, memory: _memory, ...profile } = a;
     await tx.query(
-      "INSERT INTO agents VALUES($1,$2,$3,$4) ON CONFLICT(run_id,id) DO UPDATE SET profile=excluded.profile",
+      "INSERT INTO agents VALUES($1,$2,$3,$4) ON CONFLICT(run_id,id) DO UPDATE SET profile=excluded.profile WHERE agents.profile IS DISTINCT FROM excluded.profile",
       [run, id, position, JSON.stringify(profile)],
     );
   }
@@ -78,14 +96,14 @@ async function persist(tx, run, state) {
       ...metadata
     } = r;
     await tx.query(
-      "INSERT INTO repositories VALUES($1,$2,$3,$4,$5) ON CONFLICT(run_id,id) DO UPDATE SET metadata=excluded.metadata",
+      "INSERT INTO repositories VALUES($1,$2,$3,$4,$5) ON CONFLICT(run_id,id) DO UPDATE SET metadata=excluded.metadata WHERE repositories.metadata IS DISTINCT FROM excluded.metadata",
       [run, id, owner, position, JSON.stringify(metadata)],
     );
   }
   for (const r of state.repos) {
     for (const [position, [file, content]] of Object.entries(r.files).entries())
       await tx.query(
-        "INSERT INTO files VALUES($1,$2,$3,$4,$5) ON CONFLICT(run_id,repo_id,path) DO UPDATE SET content=excluded.content",
+        "INSERT INTO files VALUES($1,$2,$3,$4,$5) ON CONFLICT(run_id,repo_id,path) DO UPDATE SET content=excluded.content WHERE files.content IS DISTINCT FROM excluded.content",
         [run, r.id, file, position, content],
       );
     for (const agent of r.stars)
@@ -102,7 +120,7 @@ async function persist(tx, run, state) {
   for (const [position, p] of state.prs.entries()) {
     const { id, repo, author, status, checks, approved, ...details } = p;
     await tx.query(
-      "INSERT INTO pull_requests VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(run_id,id) DO UPDATE SET status=excluded.status,checks=excluded.checks,approved=excluded.approved,details=excluded.details",
+      "INSERT INTO pull_requests VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(run_id,id) DO UPDATE SET status=excluded.status,checks=excluded.checks,approved=excluded.approved,details=excluded.details WHERE (pull_requests.status,pull_requests.checks,pull_requests.approved,pull_requests.details) IS DISTINCT FROM (excluded.status,excluded.checks,excluded.approved,excluded.details)",
       [
         run,
         id,

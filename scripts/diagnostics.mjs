@@ -61,6 +61,7 @@ console.log(
             "runtime/diagnostics",
             ".cache",
             "runtime/database",
+            "runtime/identity",
             "runtime/backups",
           ].map(async (p) => [p, await size(resolve(p))]),
         ),

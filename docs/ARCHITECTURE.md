@@ -1,67 +1,114 @@
-# Development architecture
+# Architecture
 
-## Request path
+## Runtime topology
 
-Browser -> same-origin `/api` -> Fastify -> WorkspaceStore -> PGlite or PostgreSQL.
-The browser displays the server state. A failed write never advances a local
-scenario optimistically. On conflict it reloads authoritative data and asks the
-observer to retry; an automatic retry could apply the next unintended step.
+```mermaid
+flowchart LR
+  UI[React browser UI] --> Gateway[API gateway]
+  Gateway --> Workspace[Workspace service]
+  Gateway --> Identity[Identity service]
+  Gateway --> Ranking[Ranking service]
+  Ranking -->|Contribution facts only| Workspace
+  Workspace --> WDB[(Workspace PostgreSQL)]
+  Identity --> IDB[(Identity PostgreSQL)]
+```
 
-## Storage
+These are independently started Node processes, with separate HTTP listeners.
+The gateway is the browser's same-origin API. Vite proxies it in development;
+in compiled mode it serves `dist` itself. The supervisor waits for each dependency
+and coordinates shutdown through IPC, including on Windows. Services are local
+process boundaries, not container or OS security sandboxes.
 
-Runs have an ID, step, revision and timestamps. A singleton workspace row selects
-the active run. Agents, follows, repositories, source files, stars, lineage,
-pull requests, issues, memories and events are separate relational tables.
-Composite foreign keys keep references within their run. Unique keys prevent
-duplicate stars. JSONB stores variable profile, PR discussion and event payloads.
-PR status/check/review columns carry a database constraint forbidding an unchecked
-or unapproved merge. Indexes cover repository ownership, open PRs and actor activity.
+Workspace and identity own separate persistent PGlite directories by default.
+They can use separate external PostgreSQL databases through their respective
+connection URLs. The external adapters have not been qualified against a live
+PostgreSQL server in this change. Docker is optional; existing Compose provisions
+only a PostgreSQL server and was not started.
 
-Migrations are transactional and checksum-tracked. Editing an applied migration
-fails startup. Add a new migration for changes. The simple migration runner accepts
-plain SQL statements, not procedural blocks containing embedded semicolons.
-Git preserves migration file bytes across platforms so checkout line-ending
-conversion cannot change an applied checksum.
+## Workspace consistency and performance
 
-Each write locks the workspace row, compares the supplied run ID and revision,
-applies one pure transition, persists the entities and increments the revision
-in the same transaction. The read path holds a shared workspace lock while
-hydrating all tables so PostgreSQL READ COMMITTED does not mix versions.
-The current bounded scenario uses small full-entity upserts; this is deliberately
-not a high-throughput agent scheduler. Before large workloads, replace those with
-event-specific writes and paginated read models.
+Runs have IDs, steps, revisions and timestamps. The active run is selected by a
+singleton workspace row. Agents, follows, repositories, files, stars, lineage,
+PRs, issues, memories and events have relational tables and foreign keys.
+Writes lock the workspace row, compare the supplied run ID and revision, perform
+one pure transition, and commit its records and new revision atomically. Failed
+writes never advance the browser optimistically. Conflicts refresh authoritative
+state and require another explicit action.
 
-## Access and execution boundaries
+Reads acquire the shared workspace lock. A bounded single-entry revision cache
+returns cloned snapshots after checking the active run/revision, avoiding repeated
+multi-table hydration. Snapshot clones prevent callers mutating the cache.
+Revision/run changes invalidate the cached view. Upserts use `IS DISTINCT FROM`
+conditions so unchanged profiles, metadata, files, issues and PR rows are not
+rewritten. Existing unique constraints still prevent duplicate relationships.
 
-This application is local-only. The HTTP server binds loopback and rejects
-non-loopback Host values. Writes require a custom operator header and reject
-foreign origins. Bodies are schema-validated and capped; requests are rate limited.
-SQL parameters carry data values. The static server exposes `dist` only.
+The ranking service consumes `/api/contributions`, a lean read model with counts
+and agent identity, rather than transferring source files, events and full state.
+The workspace owns contribution facts; ranking owns weights and sorting. Concurrent
+ranking requests share an in-flight dependency request. Scores are derived from
+the current run and do not use a stale time-to-live cache. This bounded simulation
+still returns a full snapshot to the main UI; large workloads need paginated views
+and event-specific writes, not a claim of unlimited throughput.
 
-These measures prevent accidental cross-origin browser actions; the header is
-not authentication against local processes. A remote deployment requires real
-authentication, per-agent authorization, operator roles, TLS, migrations under a
-dedicated owner and a restricted application database role.
+Historical records remain stored in their original form. A deterministic English
+read adapter translates known scenario copy in API responses. New scenario data
+is English. No applied workspace migration was modified.
 
-Provider names are simulated identities. There are no API keys, model calls,
-agent credentials, arbitrary code execution or network-isolated workers.
-Game previews use a sandboxed iframe; this is not an OS/container security boundary.
-Source modules in the displayed repositories illustrate the scenario. The playable
-previews are separately authored browser games.
+## Accounts
 
-## Development versus deployment
+Identity has its own migration set and account, session and bookmark tables.
+Registration stores a random salt plus a scrypt-derived password hash. Login uses
+a timing-safe comparison and a dummy derivation for unknown usernames. Passwords
+are never returned in public account records. Profile writes and bookmarks require
+a valid, unexpired server session. Usernames are normalized and unique.
 
-PGlite provides real embedded PostgreSQL semantics and persistent local storage,
-but is not a network PostgreSQL service or a multi-process production database.
-The pg adapter and Compose configuration support a later dedicated server.
-No external server, cloud database, paid plan or remote repository was provisioned.
-The external PostgreSQL adapter must be exercised against the target server before
-deployment; current executed database tests use PGlite.
+Session tokens contain 32 random bytes; only their SHA-256 digest is stored.
+Cookies are host-only, HttpOnly, SameSite=Strict, scoped to `/api`, with a seven-day
+absolute expiry. Logout deletes the server session and expires the cookie.
+Expired session rows are pruned when issuing sessions. Registration and login are
+rate limited. Profiles are local observer accounts and cannot impersonate agents
+or change simulated PR ownership, stars or reviews. Saved repositories are separate
+personal bookmarks.
 
-## Next substantive stage
+## React stability
 
-Add authenticated agent identities and an actual Git service, a budgeted job
-scheduler, provider adapters, immutable artifact storage and isolated workers.
-Agent memory should retain evidence and project provenance. It does not imply
-training or changing model weights. Add these behind tested boundaries rather
-than representing them as already connected in the UI.
+One `createRoot` owns the application. Route pages, source panels, dialog and
+shared controls have stable component definitions; no page-level `innerHTML` or
+morphdom replacement remains. Source rendering uses React text nodes, not HTML
+injection. Source panels are memoized, events use stable scenario keys, and native
+details remain uncontrolled so refreshing does not close them.
+
+Workspace requests are serialized/deduplicated. Equal revisions do not replace
+the data snapshot. Errors retain the previous content; a fixed error surface
+avoids pushing the reading position. Prepending activity preserves a visible
+reading anchor. Focus/route scroll changes happen on navigation, not refresh,
+theme changes, account requests or source updates. Same-entity tabs preserve the
+page position; route returns restore saved scroll. A new run explicitly returns
+home. There is no automatic reload on tab visibility changes.
+
+Theme selection applies before stylesheet paint and persists locally. Controls
+reserve dimensions for pending labels. Forms reserve feedback space; the ranking
+table reserves its loading/filter footprint. Native dialog handles focus and
+Escape; close restores the original trigger without scrolling. Trusted mini-game
+controls use React; isolated drawing engines update canvas, clamp delta to 0–40 ms,
+and cancel their animation/timers when disposed. These engines never evaluate
+repository source and are not arbitrary-code execution workers.
+
+## Access boundaries
+
+All listeners bind 127.0.0.1. Shared policy rejects non-loopback Host values,
+foreign write origins and writes lacking the custom local operator header. Bodies
+are capped and schema-validated. The gateway uses fixed service URLs, bounded
+request timeouts, sanitized dependency errors, no-store responses and aggregate
+health. Production static serving exposes `dist` only.
+
+The operator header is a browser-origin safeguard, not authentication against local
+processes. HTTP cookies deliberately omit Secure on this local HTTP preview. An
+internet deployment requires TLS, Secure cookies, authorization roles, account
+recovery, trusted network/service authentication, restricted DB roles, migration
+ownership and deployment qualification. No remote exposure or cloud provisioning
+was performed.
+
+Real model adapters, autonomous scheduling, actual Git hosting and untrusted-code
+workers remain future stages. UI ranks and checks are simulation-derived evidence,
+not model benchmarks, Elo or production acceptance.

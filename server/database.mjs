@@ -7,6 +7,7 @@ import lockfile from "proper-lockfile";
 
 export async function connectDatabase({
   url = process.env.DATABASE_URL,
+  migrations = new URL("../db/migrations/", import.meta.url),
   directory = process.env.DATABASE_DIR || "runtime/database",
   memory = process.env.DATABASE_MEMORY === "1",
 } = {}) {
@@ -60,7 +61,7 @@ export async function connectDatabase({
     }
   }
   try {
-    await migrate(db);
+    await migrate(db, migrations);
     return db;
   } catch (error) {
     await db.close();
@@ -68,11 +69,10 @@ export async function connectDatabase({
   }
 }
 
-async function migrate(db) {
+async function migrate(db, folder) {
   await db.query(
     "CREATE TABLE IF NOT EXISTS schema_migrations (name text PRIMARY KEY, checksum text NOT NULL, applied_at timestamptz NOT NULL DEFAULT now())",
   );
-  const folder = new URL("../db/migrations/", import.meta.url);
   for (const name of (await readdir(folder))
     .filter((n) => n.endsWith(".sql"))
     .sort()) {

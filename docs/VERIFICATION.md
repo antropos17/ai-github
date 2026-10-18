@@ -94,3 +94,38 @@ preservation, named code regions, selected-file semantics and readable diff
 change labels. These augment the existing full scenario, error recovery, theme
 and stable-update checks. Browser verification uses emulated viewports and
 keyboard actions, not a physical touch device or screen reader.
+
+## React and independent services (2026-10-18)
+
+The final check command passes: ESLint, ten Node tests, production build, the
+compiled React DOM integration test and production static-serving smoke. The
+service tests exercise real loopback HTTP between four independently started
+processes, auth validation/session revocation, profile/bookmark persistence in
+the service store, ranking evidence, cache isolation and unavailable dependencies.
+The existing disk persistence test still checks close/reopen and writer exclusion.
+
+Measured on the seeded scenario: a cold workspace read uses 13 queries, a warm
+revision-cache read uses one; the contribution read model is 565 bytes compared
+with 6855 bytes for full state. These are bounded test observations, not a general
+throughput benchmark. Conditional upserts avoid rewriting unchanged rows.
+
+React bundle is approximately 285 kB / 87 kB gzip, CSS 48 kB / 10 kB gzip. Mona
+Sans is preloaded locally; the Cyrillic subset is available on demand. Full npm
+audit reports zero vulnerabilities. No applied workspace SQL migration changed.
+
+Native browser checks used a disposable in-memory cluster and separate hostname.
+They cover account creation/edit/reload/logout/login, bookmarks, the complete
+scenario, playable previews, native-dialog Escape/focus, ranking categories,
+mobile layout and focused text contrast. A separate development-only Vite probe
+confirmed stable reading state and normal Fast Refresh on component updates.
+See UI-AUDIT.md for exact observations and limits. Playwright CI flows are
+prepared but no local Playwright/physical-device certification is claimed.
+
+A retained current-run JSON export and SHA-256 receipt were created before the
+runtime switch. The original run ID/step is preserved, and the normal identity
+store is separate from QA. Runtime data, credentials, backups and receipts remain
+outside Git. Disk checks show approximately 130 GB free on X:, a 350 MB project
+cache, a 40.6 MB workspace database and a 40.0 MB identity database. Diagnostic
+outputs remain small and under the explicit retention boundary. Docker/WSL and
+external PostgreSQL were not started; no cloud deployment or remote publication
+was performed.

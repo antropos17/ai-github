@@ -1,9 +1,11 @@
+import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 export default {
   root: resolve("prototype"),
   publicDir: false,
   cacheDir: resolve(".cache/vite"),
   plugins: [
+    react(),
     {
       name: "workspace-entry",
       configureServer(server) {
@@ -19,7 +21,7 @@ export default {
     host: "127.0.0.1",
     port: 4173,
     strictPort: true,
-    proxy: { "/api": "http://127.0.0.1:4174" },
+    proxy: { "/api": `http://127.0.0.1:${process.env.API_PORT || 4174}` },
     fs: { strict: true },
   },
   build: {

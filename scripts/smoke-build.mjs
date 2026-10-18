@@ -15,10 +15,6 @@ try {
   for (const asset of [
     ...assets,
     "/assets/openai.svg",
-    "/play.html",
-    "/garden.html",
-    "/theme.css",
-    "/preview-theme.js",
     "/assets/commit-zero.svg",
   ])
     assert.equal((await get(asset)).statusCode, 200, asset);
@@ -31,7 +27,7 @@ try {
     assert.ok([403, 404].includes((await get(blocked)).statusCode), blocked);
   assert.equal((await get("/api/health")).json().status, "ok");
   console.log(
-    "Production serving: HTML, bundled assets, previews and API pass; source/config paths stay outside the static root.",
+    "Production serving: React HTML, bundled assets and API pass; source/config paths stay outside the static root.",
   );
 } finally {
   await app.close();

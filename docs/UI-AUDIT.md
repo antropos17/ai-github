@@ -19,16 +19,16 @@ suite and CI job are prepared for those checks; they were not executed locally.
 
 ## Findings and changes
 
-| Priority | Finding before this pass | Change | Evidence |
-| --- | --- | --- | --- |
-| P1 | Reloading erased the agent world | PostgreSQL persistence, versioned API and preserved runs | Close/reopen database test; API and compiled DOM tests |
-| P1 | No pending, server-error or recovery path | Pending controls, retained state, error banner and retry | DOM offline/recovery test |
-| P1 | Concurrent observers could advance inconsistent state | Expected revision, row lock and 409 conflict | Concurrent API test |
-| P2 | All ten workflow steps competed with the activity feed | Current step first, optional full sequence | Source review; pixels pending |
-| P2 | Frequent rerenders could discard keyboard focus | Preserve active links; focus main on route changes | DOM focus assertion |
-| P2 | Small mobile controls and cramped code | 44px mobile controls, contained code scrolling, stronger type hierarchy | CSS review; viewport test prepared |
-| P2 | Storage and autonomous AI were easy to confuse | Explicit simulation label, real connection status, accurate sandbox copy | API health and source review |
-| P3 | Decorative blur/shadow and unrelated motion | Removed backdrop blur; one occasional dialog entrance | Source review; motion feel pending |
+| Priority | Finding before this pass                               | Change                                                                   | Evidence                                               |
+| -------- | ------------------------------------------------------ | ------------------------------------------------------------------------ | ------------------------------------------------------ |
+| P1       | Reloading erased the agent world                       | PostgreSQL persistence, versioned API and preserved runs                 | Close/reopen database test; API and compiled DOM tests |
+| P1       | No pending, server-error or recovery path              | Pending controls, retained state, error banner and retry                 | DOM offline/recovery test                              |
+| P1       | Concurrent observers could advance inconsistent state  | Expected revision, row lock and 409 conflict                             | Concurrent API test                                    |
+| P2       | All ten workflow steps competed with the activity feed | Current step first, optional full sequence                               | Source review; pixels pending                          |
+| P2       | Frequent rerenders could discard keyboard focus        | Preserve active links; focus main on route changes                       | DOM focus assertion                                    |
+| P2       | Small mobile controls and cramped code                 | 44px mobile controls, contained code scrolling, stronger type hierarchy  | CSS review; viewport test prepared                     |
+| P2       | Storage and autonomous AI were easy to confuse         | Explicit simulation label, real connection status, accurate sandbox copy | API health and source review                           |
+| P3       | Decorative blur/shadow and unrelated motion            | Removed backdrop blur; one occasional dialog entrance                    | Source review; motion feel pending                     |
 
 ## Static typography and contrast
 
@@ -228,14 +228,14 @@ new dependency, migration or database change was added.
 
 Focused audit scores after repairs (engineering judgment, not certification):
 
-| Dimension | Score / 4 | Evidence and limit |
-| --- | --- | --- |
-| Accessibility | 3 | Keyboard, named controls/regions, DOM axe checks; no physical screen reader test |
-| Performance | 3 | Small local assets, no animation library or new dependency; no full profiler run |
-| Theming | 3 | Both themes and focused rendered text checks; no all-state contrast certification |
-| Responsive | 3 | 320/390/768/1440 viewport checks; no physical touch-device test |
-| Integrity | 4 | Existing system preserved, actual source visible, simulation truth retained |
-| Total | 16 / 20 | Good; bounded verification |
+| Dimension     | Score / 4 | Evidence and limit                                                                |
+| ------------- | --------- | --------------------------------------------------------------------------------- |
+| Accessibility | 3         | Keyboard, named controls/regions, DOM axe checks; no physical screen reader test  |
+| Performance   | 3         | Small local assets, no animation library or new dependency; no full profiler run  |
+| Theming       | 3         | Both themes and focused rendered text checks; no all-state contrast certification |
+| Responsive    | 3         | 320/390/768/1440 viewport checks; no physical touch-device test                   |
+| Integrity     | 4         | Existing system preserved, actual source visible, simulation truth retained       |
+| Total         | 16 / 20   | Good; bounded verification                                                        |
 
 ### Design Taste and Impeccable detector disposition
 
@@ -275,3 +275,71 @@ foreground/background check. Screenshots: runtime/diagnostics/qa-skills-*.png.
 The complete check command passes; the standalone Playwright suite remains
 unavailable as previously documented. No claim of physical-device or screen
 reader validation is made.
+
+## React, English UI and service expansion (2026-10-18)
+
+Replaced the string-template/morphdom runtime with React 19.3.1 components for
+all active pages and preview controls. Preserved the plain GitHub-inspired shell,
+code/repository/PR conventions, provider marks, native theme selector and zero
+workspace-motion direction. Product copy, scenario data, dates, errors and empty
+states are English. Historical runs retain their stored text and receive a known
+phrase translation at the API read boundary.
+
+Added a separate leaderboard with Overall/Code/Collaboration categories, filtering,
+score sorting, tied ranks and an explicit method. Its reference is the official
+[Arena leaderboard](https://arena.ai/leaderboard). Contribution counts and scores
+come from the current workspace; there are no invented Elo values, votes, win
+rates or confidence intervals. Added local registration, login, logout, persistent
+observer profiles and saved repositories, backed by the separate identity store.
+Observer account controls remain distinct from simulated agent actions.
+
+### Reading-position and development fixes
+
+- React component definitions remain outside render functions; source panels are
+  memoized, events keyed, native details uncontrolled and equal revisions skipped.
+- Source/selection/horizontal scroll, details, focused elements and route reading
+  positions survive normal refresh/advance. New activity retains a visible anchor.
+- Background visibility changes pause playback instead of forcing a reload.
+- Pending controls and feedback reserve their footprint. Workspace errors use a
+  fixed surface, and the ranking table reserves loading/filter height.
+- Native React preview dialogs close with Escape and restore the trigger without
+  resetting document scroll. Trusted canvas engines are cleaned up on close.
+- Development logs exposed incompatible Fast Refresh exports and duplicate-root
+  creation. Split hooks, contexts and helpers from component-only JSX modules,
+  reuse the root during HMR, dispose router listeners, retain route history, and
+  guard navigation effects against rerunning for an unchanged route.
+
+A focused live Hot Refresh probe edited/restored App, providers and shared UI.
+All six updates were normal HMR updates, with no incompatible-export/page-reload
+messages or duplicate-root errors. Reading scroll stayed at 236px, code retained
+nonzero horizontal scroll, the expanded scenario and source focus survived, and
+the search draft submitted unchanged. This covers those component updates, not
+all possible changes to entry/config files or component hook signatures.
+
+### Rendered and functional verification
+
+A disposable memory-only cluster was used for browser writes. Verified registration,
+profile editing, session restoration after reload, repository bookmarking, logout,
+login, all ten scenario steps, Orbit start/stop, the new Orbital Garden preview,
+Escape/focus return, category switching and mobile ranking. The normal workspace
+was not advanced or reset by these checks. Temporary QA used localhost, keeping
+its cookies separate from the normal 127.0.0.1 preview.
+
+Focused text contrast checks passed for the mobile leaderboard and observer profile
+in both themes. At 390px the document width was 375px including reserved scrollbar
+space, and the ranking table stayed within its content panel. Normal refresh kept
+main/code top positions exactly unchanged in the desktop browser observation.
+Final screenshots use runtime/diagnostics/qa-react-*.png.
+
+The final compiled DOM flow exercises source-node/selection/scroll/focus retention,
+open details, unsubmitted navigation, full scenario/error recovery, themes, code
+diffs, ranking, signup/login/logout, profile saving, bookmarks, search escaping,
+service health and fresh-run navigation. Markup axe checks include signup, profile
+editing, ranking and overview; rendered contrast is checked separately.
+
+Impeccable reports one generic overused-font warning for Mona Sans. Retained for
+the user's explicit GitHub reference. No new motion, decorative assets or motion
+library were introduced. The standalone Playwright suite was updated for React
+and the new account flows but was not executed locally because its Chromium build
+is unavailable. Physical touch-device and screen-reader qualification remain
+outside the evidence.
