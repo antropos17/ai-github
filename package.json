@@ -1,0 +1,43 @@
+{
+  "name": "commit-zero",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.11 <25"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/build.mjs",
+    "start": "node server/index.mjs",
+    "test": "node --test --test-concurrency=1 prototype/social-state.test.mjs tests/*.test.mjs",
+    "check": "npm run lint && npm test && npm run build && npm run test:dom && npm run test:serve",
+    "lint": "eslint server scripts tests prototype/social.mjs prototype/social-state.mjs prototype/client.mjs",
+    "format": "prettier --write server scripts tests prototype/social.mjs prototype/social-state.mjs prototype/client.mjs prototype/social.css prototype/social.html vite.config.mjs eslint.config.mjs playwright.config.mjs",
+    "db:status": "node scripts/db-status.mjs",
+    "db:backup": "node scripts/backup.mjs",
+    "diagnostics": "node scripts/diagnostics.mjs",
+    "test:ui": "playwright test",
+    "test:dom": "node --test tests/interface.dom.mjs",
+    "test:serve": "node scripts/smoke-build.mjs"
+  },
+  "dependencies": {
+    "@electric-sql/pglite": "0.5.10",
+    "@fastify/rate-limit": "11.2.1",
+    "@fastify/static": "10.1.6",
+    "fastify": "5.12.7",
+    "pg": "8.23.1",
+    "proper-lockfile": "4.1.2"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@eslint/js": "10.0.1",
+    "@playwright/test": "1.64.1",
+    "axe-core": "4.14.0",
+    "eslint": "10.13.0",
+    "globals": "17.13.0",
+    "jsdom": "29.1.1",
+    "prettier": "3.9.10",
+    "vite": "8.3.4"
+  }
+}
