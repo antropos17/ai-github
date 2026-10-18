@@ -121,6 +121,7 @@ test("Compiled interface loads, saves, recovers, navigates, and has accessible m
   selection.addRange(range);
   const selectedText = selection.toString();
   scrollPosition = 320;
+  doc.querySelector("#mobile-navigation").value = "history";
   doc.querySelector("#sync").click();
   await until(
     () => doc.querySelector("main").getAttribute("aria-busy") === "false",
@@ -130,6 +131,7 @@ test("Compiled interface loads, saves, recovers, navigates, and has accessible m
   assert.equal(selection.toString(), selectedText);
   assert.equal(doc.activeElement, eventLink);
   assert.equal(scrollPosition, 320);
+  assert.equal(doc.querySelector("#mobile-navigation").value, "history");
   doc.querySelector("#playback-next").click();
   await until(
     () => doc.querySelector("#playback-status").textContent === "Шаг 1 / 10",
@@ -142,7 +144,16 @@ test("Compiled interface loads, saves, recovers, navigates, and has accessible m
   window.location.hash = "/agents";
   await until(() => doc.querySelector("h1")?.textContent === "Агенты");
   assert.equal(scrollPosition, 0);
-  window.location.hash = "/home";
+  const mobileNavigation = doc.querySelector("#mobile-navigation");
+  assert.equal(mobileNavigation.value, "agents");
+  mobileNavigation.value = "home";
+  mobileNavigation.dispatchEvent(new window.Event("change", { bubbles: true }));
+  assert.equal(window.location.hash, "#/agents");
+  doc
+    .querySelector(".mobile-navigation")
+    .dispatchEvent(
+      new window.Event("submit", { bubbles: true, cancelable: true }),
+    );
   await until(() => Boolean(doc.querySelector(".activity-feed")));
   assert.equal(scrollPosition, 320);
   assert.equal(
@@ -179,6 +190,26 @@ test("Compiled interface loads, saves, recovers, navigates, and has accessible m
   await until(() => Boolean(doc.querySelector(".code-lines")));
   assert.match(doc.querySelector(".code-lines").textContent, /Math.max/);
   assert.equal(doc.activeElement, doc.querySelector("main"));
+  assert.equal(mobileNavigation.value, "repos");
+  const repositoryHash = window.location.hash;
+  doc.querySelector(".skip").click();
+  assert.equal(window.location.hash, repositoryHash);
+  assert.equal(doc.activeElement, doc.querySelector("main"));
+  assert.equal(
+    doc
+      .querySelector(".file-list a[aria-current='page']")
+      .textContent.includes("orbit.js"),
+    true,
+  );
+  assert.equal(
+    doc.querySelector(".code-scroller").getAttribute("role"),
+    "region",
+  );
+  window.location.hash = "/pr/12/files";
+  await until(() => Boolean(doc.querySelector(".diff-add")));
+  assert.match(doc.querySelector(".diff-add .sr").textContent, /Добавлено/);
+  assert.match(doc.querySelector(".diff-del .sr").textContent, /Удалено/);
+  assert.equal(mobileNavigation.value, "pulls");
   const input = doc.querySelector("#search-input");
   input.value = "<img src=x onerror=alert(1)>";
   doc

@@ -158,7 +158,7 @@ function highlight(source) {
   return output + esc(source.slice(last));
 }
 function codeLines(source) {
-  return `<div class="code-scroller" data-key="source-code" tabindex="0" aria-label="Исходный код"><div class="code-lines">${source
+  return `<div class="code-scroller" role="region" data-key="source-code" tabindex="0" aria-label="Исходный код"><div class="code-lines">${source
     .trimEnd()
     .split("\n")
     .map(
@@ -192,7 +192,7 @@ function repoPage(id, tab = "code", file) {
     )
       .map(
         (f) =>
-          `<a href="${path("repo", id, "code")}/${encodeURIComponent(f)}" class="${f === filename ? "selected" : ""}">${icon("file")}${esc(f)}<span class="file-description">${f.endsWith(".md") ? "Описание проекта" : "Исходный модуль"}</span></a>`,
+          `<a href="${path("repo", id, "code")}/${encodeURIComponent(f)}" class="${f === filename ? "selected" : ""}" ${f === filename ? 'aria-current="page"' : ""}>${icon("file")}${esc(f)}<span class="file-description">${f.endsWith(".md") ? "Описание проекта" : "Исходный модуль"}</span></a>`,
       )
       .join(
         "",
@@ -232,8 +232,8 @@ function diff(p) {
   const removed = oldLines.slice(prefix, oldLines.length - suffix),
     added = newLines.slice(prefix, newLines.length - suffix);
   const line = (text, n, type = "") =>
-    `<div class="code-line ${type}"><span class="ln" aria-hidden="true">${type === "diff-add" ? "+" : type === "diff-del" ? "−" : n}</span><code>${highlight(text) || " "}</code></div>`;
-  return `<div class="code-panel"><div class="code-head"><span>${icon("file")} ${filename}</span><span><b style="color:var(--green)">+${added.length}</b> <b style="color:var(--red)">−${removed.length}</b></span></div><div class="code-scroller" tabindex="0" aria-label="Изменения кода"><div class="code-lines">${oldLines
+    `<div class="code-line ${type}"><span class="ln" aria-hidden="true">${type === "diff-add" ? "+" : type === "diff-del" ? "−" : n}</span><code>${type ? `<span class="sr">${type === "diff-add" ? "Добавлено" : "Удалено"}: </span>` : ""}${highlight(text) || " "}</code></div>`;
+  return `<div class="code-panel"><div class="code-head"><span>${icon("file")} ${filename}</span><span><b style="color:var(--green)">+${added.length}</b> <b style="color:var(--red)">−${removed.length}</b></span></div><div class="code-scroller" role="region" tabindex="0" aria-label="Изменения кода"><div class="code-lines">${oldLines
     .slice(0, prefix)
     .map((x, i) => line(x, i + 1))
     .join(
@@ -345,6 +345,8 @@ function render() {
         ? a.setAttribute("aria-current", "page")
         : a.removeAttribute("aria-current"),
     );
+  if (renderedRoute !== raw)
+    document.querySelector("#mobile-navigation").value = nav;
   const directoryElement = document.querySelector("#workspace-directory");
   const directoryMarkup = directory();
   if (renderedDirectory !== directoryMarkup) {
@@ -560,6 +562,20 @@ document.querySelector("#search-form").addEventListener("submit", (event) => {
     "/search?q=" +
     encodeURIComponent(document.querySelector("#search-input").value.trim());
 });
+document.querySelector(".skip").addEventListener("click", (event) => {
+  event.preventDefault();
+  main.focus();
+});
+document
+  .querySelector(".mobile-navigation")
+  .addEventListener("submit", (event) => {
+    event.preventDefault();
+    const destination = [...document.querySelectorAll(".global-nav a")].find(
+      (link) =>
+        link.dataset.nav === document.querySelector("#mobile-navigation").value,
+    );
+    if (destination) location.hash = destination.hash;
+  });
 window.addEventListener("hashchange", () => {
   if (location.hash === "#main") {
     main.focus();

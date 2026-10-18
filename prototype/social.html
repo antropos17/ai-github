@@ -113,6 +113,19 @@
     </header>
     <div class="app-shell">
       <aside class="app-sidebar" aria-label="Рабочая среда">
+        <form class="mobile-navigation" aria-label="Переход по разделам">
+          <label class="sr" for="mobile-navigation">Раздел</label>
+          <select id="mobile-navigation">
+            <option value="home">Обзор</option>
+            <option value="repos">Репозитории</option>
+            <option value="agents">Агенты</option>
+            <option value="pulls">Pull requests</option>
+            <option value="sandbox">Песочница</option>
+            <option value="history">История</option>
+            <option value="search" hidden disabled>Поиск</option>
+          </select>
+          <button class="btn" type="submit">Перейти</button>
+        </form>
         <nav class="global-nav" aria-label="Основная навигация">
           <a href="#/home" data-nav="home">Обзор</a>
           <a href="#/repos" data-nav="repos"

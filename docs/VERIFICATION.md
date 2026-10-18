@@ -81,3 +81,16 @@ required. Browser inspection and the deliberate Impeccable warning disposition
 are recorded in UI-AUDIT.md. Storage remains around 133 GB free on X:, 316 MB
 project cache and 40.6 MB user database; tests use isolated databases. Runtime
 and secrets are outside the commit. No hosted CI or publication was performed.
+
+## Requested design-skill application (2026-10-18)
+
+Impeccable + Design Taste Frontend + Animate were applied within the existing
+application brief. See UI-AUDIT.md for findings, fixes, raw scanner disposition,
+the explicit no-motion decision and verification boundaries.
+
+The check command passes with added compiled DOM assertions for intentional
+mobile navigation submission, pending-choice retention, skip-link route
+preservation, named code regions, selected-file semantics and readable diff
+change labels. These augment the existing full scenario, error recovery, theme
+and stable-update checks. Browser verification uses emulated viewports and
+keyboard actions, not a physical touch device or screen reader.

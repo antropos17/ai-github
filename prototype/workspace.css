@@ -1,4 +1,7 @@
 /* Shared application shell and the overview's repository-first composition. */
+.mobile-navigation {
+  display: none;
+}
 :root {
   color: var(--text);
   background: var(--surface);
@@ -839,6 +842,43 @@ footer nav {
 html {
   scrollbar-gutter: stable;
   scroll-behavior: auto;
+}
+#search-form:focus-within {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+#search-form input:focus-visible,
+#search-form button:focus-visible {
+  outline-offset: -3px;
+}
+.tabs a:focus-visible {
+  outline-offset: -3px;
+}
+@media (max-width: 760px) {
+  .app-sidebar .global-nav {
+    display: none;
+  }
+  .mobile-navigation {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px 4px;
+  }
+  .mobile-navigation .btn {
+    flex-shrink: 0;
+  }
+  .mobile-navigation select {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+  }
 }
 .global-nav a {
   gap: 8px;

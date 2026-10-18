@@ -188,3 +188,90 @@ precedence over generic novelty guidance. No unexplained type warning remains.
 Screenshots: `runtime/diagnostics/qa-type-*.png`, disposable under the existing
 seven-day / 50 MB command. The standalone Playwright suite remains unavailable;
 no claim is made that it ran in this pass.
+
+## Requested three-skill pass (2026-10-18)
+
+### Scope and implementation integrity
+
+Applied the locally vendored Impeccable, Design Taste Frontend and Animate skills
+to the existing Operate/Read workspace. Preserve the explicit GitHub reference,
+local identity, plain typography, both themes and the user's earlier no-motion
+preference. This is an application screen: Design Taste's marketing direction
+draw, picture quota, hero scale and motion quota do not define this surface.
+Used its source scan, actual-content, hierarchy, spacing, collision and phone
+composition checks. No marketing content or decorative assets were introduced.
+
+The integrity verdict is coherent within this scope: real project source,
+repository relationships and account marks carry the identity; the persisted
+scenario remains labeled as simulated. No unsupported model-execution claim,
+new dependency, migration or database change was added.
+
+### Audit findings and completed repairs
+
+- P1 / accessibility: diff signs were hidden from assistive technology while the
+  addition/deletion distinction depended on color. Added visually hidden type
+  labels per changed line; retained visible +/- gutters and source highlighting.
+- P2 / navigation: mobile navigation put Sandbox and History past the visible
+  right edge. Replaced the strip with a native select and explicit Go submit.
+  All six sections are available. Merely selecting an option does not navigate;
+  background state refresh does not discard the unsubmitted choice.
+- P2 / accessibility: the skip link changed the application fragment to #main.
+  Although a special handler focused main, refresh could then reopen the home
+  route instead of the current repository. Prevent default fragment navigation
+  and focus main directly; the repository URL remains intact.
+- P2 / keyboard feedback: search focus could be clipped by its overflow boundary;
+  page-tab focus could be clipped by the tab scroller. Added a visible search
+  group outline and inset outlines for its controls and page tabs. Retained the
+  existing inset code-scroller focus rule.
+- P2 / semantics: named source/diff containers were generic elements, and selected
+  files had only visual styling. Added region roles and aria-current on the file.
+
+Focused audit scores after repairs (engineering judgment, not certification):
+
+| Dimension | Score / 4 | Evidence and limit |
+| --- | --- | --- |
+| Accessibility | 3 | Keyboard, named controls/regions, DOM axe checks; no physical screen reader test |
+| Performance | 3 | Small local assets, no animation library or new dependency; no full profiler run |
+| Theming | 3 | Both themes and focused rendered text checks; no all-state contrast certification |
+| Responsive | 3 | 320/390/768/1440 viewport checks; no physical touch-device test |
+| Integrity | 4 | Existing system preserved, actual source visible, simulation truth retained |
+| Total | 16 / 20 | Good; bounded verification |
+
+### Design Taste and Impeccable detector disposition
+
+The initial Design Taste source scan reported 35 FAIL and 28 WARN: 33 thin-rule matches,
+one monospace match, one shadow match, 27 outlined-box matches and one glass
+match. These are not reported as a green gate. The shadow/glass declarations are
+literally none; monospace is restricted to source/code; lines and outlines form
+real file/PR/data lists, inputs and developer-workspace boundaries explicitly
+requested by the user. The skill itself excludes dashboard/application screens.
+The CLI browser inspector was not run: rendered inspection used the authorized
+in-app browser instead. No source suppression or detector configuration changed.
+
+Impeccable returns two generic overused-font warnings for Mona Sans. Retained
+intentionally because the explicit GitHub reference takes precedence over
+novelty. No font change was made during this pass.
+
+### Animate decision
+
+Navigation, keyboard actions, source reading and repeated scenario updates are
+frequent-use interactions. The gate rejects decorative motion on these surfaces;
+feedback uses immediate selected, focus, busy and saved states. Preview dialogs
+remain native and immediate because the existing brief rejects modal motion.
+Stable keyed updates handle spatial continuity. Gameplay motion is essential to
+the existing previews and remains separate. No UI animation/transition was added,
+no easing token or motion library was installed, and no reduced-motion kill rule
+was used to disguise unnecessary animation.
+
+### Verification
+
+The compiled DOM regression now checks deliberate navigation submission,
+preservation of a pending section selection across refresh, route-preserving
+skip focus, named code regions, selected-file semantics and diff text labels.
+In-app keyboard checks exercised search focus, Go submission, skip focus and
+code scrolling. Mobile controls measure 44px; 320/390 document widths remain
+305/375px with scrollbar space. Both mobile home themes pass the focused
+foreground/background check. Screenshots: runtime/diagnostics/qa-skills-*.png.
+The complete check command passes; the standalone Playwright suite remains
+unavailable as previously documented. No claim of physical-device or screen
+reader validation is made.
