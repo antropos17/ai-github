@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Мини-игра — Commit Zero</title>
     <link rel="icon" href="data:," />
+    <script src="preview-theme.js"></script>
+    <link rel="stylesheet" href="theme.css" />
     <style>
       * {
         box-sizing: border-box;
@@ -12,8 +14,8 @@
       body {
         margin: 0;
         padding: 18px 22px 20px;
-        color: #252b34;
-        background: #fff;
+        color: var(--text);
+        background: var(--surface);
         font:
           14px/1.5 Arial,
           Helvetica,
@@ -24,27 +26,27 @@
         display: flex;
         justify-content: space-between;
         font-size: 12px;
-        color: #697381;
+        color: var(--muted);
         margin: 0 0 10px;
       }
       #score {
         font-variant-numeric: tabular-nums;
-        color: #252b34;
+        color: var(--text);
       }
       canvas {
         width: 100%;
         height: 275px;
         display: block;
         border-radius: 8px;
-        background: #f2f5f9;
+        background: var(--soft);
       }
       button {
         display: block;
         width: 100%;
         margin-top: 18px;
         min-height: 48px;
-        background: #252b34;
-        color: white;
+        background: var(--emphasis);
+        color: var(--on-emphasis);
         border: 0;
         border-radius: 7px;
         font:
@@ -54,17 +56,17 @@
         cursor: pointer;
       }
       button:focus-visible {
-        outline: 3px solid #245fe5;
+        outline: 3px solid var(--blue);
         outline-offset: 4px;
       }
       button:disabled {
-        background: #e9edf2;
-        color: #6a7688;
+        background: var(--selected);
+        color: var(--muted);
         cursor: default;
       }
       p {
         margin: 12px 0 0;
-        color: #697381;
+        color: var(--muted);
         font-size: 13px;
         min-height: 40px;
       }

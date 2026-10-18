@@ -65,6 +65,50 @@ test("Compiled interface loads, saves, recovers, navigates, and has accessible m
   await until(() => doc.querySelector("h1")?.textContent === "Обзор среды");
   assert.match(doc.querySelector("#connection-label").textContent, /Сохранено/);
   const codeScroller = doc.querySelector(".code-scroller");
+  const themeControl = doc.querySelector("#theme-select");
+  assert.ok(doc.querySelector(".brand-mark"));
+  assert.ok(doc.querySelector(".fn"));
+  for (const theme of ["dark", "light"]) {
+    themeControl.value = theme;
+    themeControl.dispatchEvent(new window.Event("change", { bubbles: true }));
+    assert.equal(doc.documentElement.dataset.theme, theme);
+    assert.equal(window.localStorage.getItem("commit-zero-theme"), theme);
+    assert.equal(doc.querySelector(".code-scroller"), codeScroller);
+  }
+  window.dispatchEvent(
+    new window.StorageEvent("storage", {
+      key: "commit-zero-theme",
+      newValue: "dark",
+    }),
+  );
+  assert.equal(themeControl.value, "dark");
+  themeControl.value = "light";
+  themeControl.dispatchEvent(new window.Event("change", { bubbles: true }));
+
+  // The synchronous bootstrap restores appearance before the stylesheet paints.
+  const reloaded = new JSDOM(html, {
+    url: "http://127.0.0.1:4173/",
+    runScripts: "outside-only",
+  });
+  reloaded.window.matchMedia = () => ({ matches: false });
+  reloaded.window.localStorage.setItem("commit-zero-theme", "dark");
+  reloaded.window.eval(
+    reloaded.window.document.querySelector("#theme-init").textContent,
+  );
+  assert.equal(reloaded.window.document.documentElement.dataset.theme, "dark");
+  reloaded.window.matchMedia = () => ({ matches: true });
+  Object.defineProperty(reloaded.window, "localStorage", {
+    get() {
+      throw new Error("storage blocked");
+    },
+  });
+  assert.doesNotThrow(() =>
+    reloaded.window.eval(
+      reloaded.window.document.querySelector("#theme-init").textContent,
+    ),
+  );
+  assert.equal(reloaded.window.document.documentElement.dataset.theme, "dark");
+  reloaded.window.close();
   const existingEvent = doc.querySelector(".feed-item");
   const eventKey = existingEvent.dataset.key;
   const eventLink = existingEvent.querySelector("a");

@@ -52,3 +52,16 @@ overflow, no computed CSS motion, code scroll retained through refresh, immediat
 preview and Escape/focus restoration. Impeccable scan returned `[]`; dependency
 audit reported zero vulnerabilities. The standalone Playwright executable is
 still absent; no new claim of a passing full browser suite is made.
+
+## Light/dark GitHub-style appearance
+
+The full check command passes with theme control, persistence, cross-tab event,
+pre-paint bootstrap and blocked-storage assertions in the compiled DOM test.
+Static serving now checks the restored SVG mark and shared preview theme assets.
+
+Rendered in-app checks: 1440px light/dark home, saved dark theme after reload,
+dark PR discussion, both diff themes, repository list and source view, 390px
+light/dark home and dark preview.
+Computed foreground/background checks passed after fixing the dark diff gutter
+markers. There is no document overflow on the 390px home; the theme control is
+44px tall. The standalone Playwright suite remains unavailable as documented.

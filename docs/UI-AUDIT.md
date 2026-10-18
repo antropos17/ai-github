@@ -125,3 +125,31 @@ or nonzero transition. A refresh retained code scroll at 37.33px. Preview opened
 with transform/animation `none`; Escape returned focus to its launch button.
 The source detector returned no findings and dependency audit found no reported
 vulnerabilities. This does not expand the unavailable Playwright suite into a pass.
+
+## GitHub-style light and dark appearance
+
+The next request explicitly restored the logo and requested simpler GitHub-like
+appearance, stronger code contrast and both light/dark themes. Restored the
+monochrome commit-graph mark and favicon; kept text navigation, plain surfaces,
+repository tables, PR tabs and restrained controls. The observer link in the
+header was replaced with the native theme selector; sandbox access remains in
+navigation. No animation was added.
+
+All maintained component color literals were converted to semantic roles in
+`theme.css`. White avatar grounds are intentional for the existing provider marks.
+Added theme-specific source tokens, function highlighting, separate diff gutters,
+status surfaces and preview/canvas palettes. Early theme bootstrap avoids a wrong
+initial theme; selection persists locally and propagates to preview frames.
+
+In-app browser checks cover both home themes at 1440/390px, preference restoration
+after reload, PR discussion and diff, and the dark game preview. Computed text
+contrast checks found two low-contrast +/- gutter markers in the initial dark
+diff; these were corrected to the main ink role. Rechecking both diff themes and
+both mobile home themes found no text-contrast failures. The 390px viewport had
+375px document width with a reserved scrollbar gutter and a 44px theme control.
+This is focused rendered evidence, not a full browser accessibility certification.
+
+The compiled DOM integration checks theme selection, stored choice, cross-tab
+events, source node retention, early saved-theme restoration and blocked storage.
+Production serving verifies the shared preview stylesheet/script and restored logo.
+Screenshots use `runtime/diagnostics/qa-github-*.jpg` and existing retention rules.

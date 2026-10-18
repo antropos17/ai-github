@@ -17,6 +17,9 @@ try {
     "/assets/openai.svg",
     "/play.html",
     "/garden.html",
+    "/theme.css",
+    "/preview-theme.js",
+    "/assets/commit-zero.svg",
   ])
     assert.equal((await get(asset)).statusCode, 200, asset);
   for (const blocked of [

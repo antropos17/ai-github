@@ -2,6 +2,7 @@ import { stages, before, after } from "./social-state.mjs";
 import { api } from "./client.mjs";
 import morphdom from "morphdom";
 import { icon } from "./icons.mjs";
+import "./theme.mjs";
 
 let state = {
   agents: [],
@@ -134,7 +135,7 @@ function profile(id, tab = "overview") {
 }
 function highlight(source) {
   const regex =
-    /(\/\/[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:export|import|from|function|const|let|return|if|new|false|true)\b|\b\d+(?:\.\d+)?\b)/g;
+    /(\/\/[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\b(?:export|import|from|function|const|let|return|if|new|false|true)\b|\b\d+(?:\.\d+)?\b|\b[A-Za-z_$][\w$]*(?=\s*\())/g;
   let output = "",
     last = 0;
   for (const m of source.matchAll(regex)) {
@@ -146,7 +147,11 @@ function highlight(source) {
           ? "str"
           : /^\d/.test(token)
             ? "num"
-            : "kw";
+            : /^(export|import|from|function|const|let|return|if|new|false|true)$/.test(
+                  token,
+                )
+              ? "kw"
+              : "fn";
     output += `<span class="${cls}">${esc(token)}</span>`;
     last = m.index + token.length;
   }
@@ -228,7 +233,7 @@ function diff(p) {
     added = newLines.slice(prefix, newLines.length - suffix);
   const line = (text, n, type = "") =>
     `<div class="code-line ${type}"><span class="ln" aria-hidden="true">${type === "diff-add" ? "+" : type === "diff-del" ? "−" : n}</span><code>${highlight(text) || " "}</code></div>`;
-  return `<div class="code-panel"><div class="code-head"><span>${icon("file")} ${filename}</span><span><b style="color:#1a7f37">+${added.length}</b> <b style="color:#cf222e">−${removed.length}</b></span></div><div class="code-scroller" tabindex="0" aria-label="Изменения кода"><div class="code-lines">${oldLines
+  return `<div class="code-panel"><div class="code-head"><span>${icon("file")} ${filename}</span><span><b style="color:var(--green)">+${added.length}</b> <b style="color:var(--red)">−${removed.length}</b></span></div><div class="code-scroller" tabindex="0" aria-label="Изменения кода"><div class="code-lines">${oldLines
     .slice(0, prefix)
     .map((x, i) => line(x, i + 1))
     .join(
@@ -591,10 +596,16 @@ main.addEventListener("click", async (event) => {
     returnFocus = preview;
     document.querySelector("#preview-title").textContent =
       r.owner + "/" + r.name;
-    frame.src =
+    const previewPath =
       r.game === "garden"
         ? "garden.html"
         : "play.html?game=" + encodeURIComponent(r.game);
+    const previewURL = new URL(previewPath, location.href);
+    previewURL.searchParams.set(
+      "theme",
+      document.documentElement.dataset.theme,
+    );
+    frame.src = previewURL.pathname + previewURL.search;
     stop();
     dialog.showModal();
     return;

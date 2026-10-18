@@ -28,9 +28,31 @@ function resize() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (!playing) draw();
 }
-function text(t, x, y, size = 20, color = "#51627a") {
-  ctx.fillStyle = color;
-  ctx.font = `600 ${size}px 'Segoe UI',sans-serif`;
+const canvasPalettes = {
+  light: {
+    ink: "#1f2328",
+    muted: "#59636e",
+    line: "#c4cbd3",
+    ready: "#dafbe1",
+    waiting: "#fff1e5",
+    idle: "#ddf4ff",
+  },
+  dark: {
+    ink: "#f0f6fc",
+    muted: "#9198a1",
+    line: "#6e7681",
+    ready: "#12261e",
+    waiting: "#33271b",
+    idle: "#152b41",
+  },
+};
+const canvasPalette = () =>
+  canvasPalettes[
+    document.documentElement.dataset.theme === "dark" ? "dark" : "light"
+  ];
+function text(t, x, y, size = 20, color) {
+  ctx.fillStyle = color || canvasPalette().ink;
+  ctx.font = `400 ${size}px Arial,sans-serif`;
   ctx.textAlign = "center";
   ctx.fillText(t, x, y);
 }
@@ -41,7 +63,7 @@ function draw() {
       y = height / 2,
       r = Math.min(85, height * 0.31);
     ctx.lineWidth = 2;
-    ctx.strokeStyle = "#cfdae7";
+    ctx.strokeStyle = canvasPalette().line;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.stroke();
@@ -50,7 +72,7 @@ function draw() {
     ctx.beginPath();
     ctx.arc(x, y, r, -0.95, -0.45);
     ctx.stroke();
-    ctx.fillStyle = "#252b34";
+    ctx.fillStyle = canvasPalette().ink;
     ctx.beginPath();
     ctx.arc(
       x + Math.cos(angle) * r,
@@ -61,9 +83,9 @@ function draw() {
     );
     ctx.fill();
     text(String(score), x, y + 6, 34);
-    text("попаданий", x, y + 29, 11, "#697381");
+    text("попаданий", x, y + 29, 11, canvasPalette().muted);
   } else if (kind === "tower") {
-    ctx.fillStyle = "#dddfe3";
+    ctx.fillStyle = canvasPalette().line;
     ctx.fillRect(20, height - 21, width - 40, 1);
     const visible = blocks.slice(-8);
     visible.forEach((b, i) => {
@@ -85,10 +107,10 @@ function draw() {
       y = height / 2;
     ctx.fillStyle =
       phase === "ready"
-        ? "#d4eee0"
+        ? canvasPalette().ready
         : phase === "waiting"
-          ? "#f7e8de"
-          : "#e6ecf6";
+          ? canvasPalette().waiting
+          : canvasPalette().idle;
     ctx.fillRect(0, 0, width, height);
     ctx.fillStyle =
       phase === "ready"
@@ -264,3 +286,7 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 resize();
+
+window.addEventListener("preview-theme-change", () => {
+  if (!playing) draw();
+});

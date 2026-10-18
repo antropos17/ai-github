@@ -10,5 +10,7 @@
   `@fontsource/arimo` 5.3.0 package. Only normal 400/600 Latin and Cyrillic WOFF2
   subsets enter the production bundle. Attribution and the SIL Open Font License
   are included in `licenses/Arimo-OFL.txt`. No external font service is contacted.
-- The brand is a plain text wordmark. There is no generated or custom pictorial
-  logo. Code retains the existing monospace stack; game previews use Arial.
+- `commit-zero.svg` restores the project's monochrome commit-graph mark for the
+  favicon. The header renders the same geometry using theme roles. This is an
+  authored Commit Zero identity, not GitHub's mark. Code uses a conventional
+  monospace stack; game previews use Arial.

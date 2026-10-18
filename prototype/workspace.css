@@ -42,20 +42,15 @@
 }
 /* Shared application shell and the overview's repository-first composition. */
 :root {
-  --border: #d1d9e0;
-  --soft: #f6f8fa;
-  --muted: #59636e;
-  --surface: #fff;
-  --text: #1f2328;
   color: var(--text);
-  background: #fff;
+  background: var(--surface);
   font-family: "Arimo", Arial, Helvetica, sans-serif;
 }
 body {
   line-height: 1.55;
 }
 header {
-  background: #fff;
+  background: var(--surface);
 }
 .header-inner {
   max-width: none;
@@ -71,8 +66,8 @@ header {
 }
 #search-form {
   width: 310px;
-  border-color: #e0e4e9;
-  background: #fafbfc;
+  border-color: var(--border);
+  background: var(--soft);
 }
 #search-form input {
   font-size: 12px;
@@ -95,7 +90,7 @@ header {
   min-height: calc(100vh - 69px);
 }
 .app-sidebar {
-  background: #f6f8fa;
+  background: var(--soft);
   border-right: 1px solid var(--border);
   padding: 24px 12px;
   display: flex;
@@ -117,27 +112,27 @@ header {
   gap: 10px;
   min-height: 38px;
   border-radius: 4px;
-  color: #535d6b;
+  color: var(--muted);
 }
 .global-nav a > .count {
   margin-left: auto;
 }
 .global-nav a:hover {
-  background: #f5f6f8;
+  background: var(--soft);
   text-decoration: none;
-  color: #202631;
+  color: var(--text);
 }
 .global-nav a[aria-current] {
-  color: #202631;
-  background: #eef0f3;
+  color: var(--text);
+  background: var(--selected);
   font-weight: 600;
 }
 .global-nav a[aria-current]:after {
   content: none;
 }
 .count {
-  background: #eaeef2;
-  color: #505b69;
+  background: var(--selected);
+  color: var(--muted);
   font-size: 12px;
   padding: 1px 6px;
   line-height: 1.5;
@@ -162,7 +157,7 @@ header {
   display: flex;
   align-items: center;
   gap: 9px;
-  color: #364151;
+  color: var(--text);
   padding: 8px 6px;
   font-size: 12px;
   min-height: 34px;
@@ -174,7 +169,7 @@ header {
   text-decoration: none;
 }
 .directory-link > .icon {
-  color: #717b89;
+  color: var(--muted);
   width: 15px;
   height: 15px;
 }
@@ -196,7 +191,7 @@ header {
 .demo-bar {
   min-height: 59px;
   padding: 10px 32px;
-  background: #fff;
+  background: var(--surface);
   font-size: 12px;
   gap: 12px;
 }
@@ -229,19 +224,19 @@ header {
   border-radius: 4px;
 }
 .playback #playback-toggle {
-  background: #242b36;
-  border-color: #242b36;
+  background: var(--emphasis);
+  border-color: var(--emphasis);
 }
 .playback #sync {
   min-height: 32px;
   min-width: 32px;
 }
 .btn.green {
-  background: #1f7b46;
-  border-color: #1f7b46;
+  background: var(--success-action);
+  border-color: var(--success-action);
 }
 .btn.green:hover {
-  background: #18683a;
+  background: var(--success-hover);
 }
 main {
   width: 100%;
@@ -250,7 +245,7 @@ main {
   min-height: 65vh;
 }
 h1 {
-  color: #202631;
+  color: var(--text);
   font-size: 22px;
   font-weight: 400;
   letter-spacing: 0;
@@ -285,7 +280,7 @@ h2 {
   min-width: 0;
 }
 .project-workbench {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 4px;
   overflow: hidden;
@@ -310,7 +305,7 @@ h2 {
   padding: 7px;
 }
 .workbench-head .repo-name {
-  color: #222b38;
+  color: var(--text);
   font-size: 14px;
 }
 .workbench-head .repo-name .icon {
@@ -330,17 +325,17 @@ h2 {
   height: 12px;
 }
 .editor-preview {
-  background: #fff;
-  color: #1f2328;
+  background: var(--surface);
+  color: var(--text);
 }
 .editor-tabs {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding-right: 16px;
-  background: #f6f8fa;
+  background: var(--soft);
   font-size: 12px;
-  border-bottom: 1px solid #d1d9e0;
+  border-bottom: 1px solid var(--border);
   gap: 12px;
 }
 .editor-tabs > span {
@@ -349,16 +344,16 @@ h2 {
   display: inline-flex;
   gap: 8px;
   align-items: center;
-  background: #fff;
+  background: var(--surface);
   border-top: 0;
-  border-right: 1px solid #d1d9e0;
+  border-right: 1px solid var(--border);
 }
 .editor-tabs .icon {
   width: 13px;
   height: 13px;
 }
 .editor-tabs a {
-  color: #0969da;
+  color: var(--blue);
   white-space: nowrap;
 }
 .editor-tabs a .icon {
@@ -368,7 +363,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   padding: 12px 20px 0;
-  color: #59636e;
+  color: var(--muted);
   font-size: 12px;
 }
 .editor-filebar .icon {
@@ -386,21 +381,21 @@ h2 {
   line-height: 23px;
 }
 .editor-preview .ln {
-  color: #6e7781;
+  color: var(--comment);
   min-width: 47px;
   padding: 0 15px;
 }
 .editor-preview .kw {
-  color: #cf222e;
+  color: var(--red);
 }
 .editor-preview .str {
-  color: #0a3069;
+  color: var(--string);
 }
 .editor-preview .num {
-  color: #0550ae;
+  color: var(--number);
 }
 .editor-preview .comment {
-  color: #6e7781;
+  color: var(--comment);
 }
 .workbench-pr {
   padding: 16px 18px;
@@ -411,7 +406,7 @@ h2 {
 }
 .workbench-pr:hover {
   text-decoration: none;
-  background: #fafbfc;
+  background: var(--soft);
 }
 .workbench-pr > div {
   min-width: 0;
@@ -436,11 +431,11 @@ h2 {
   place-items: center;
   border-radius: 0;
   background: none;
-  color: #1a7f37;
+  color: var(--green);
   flex-shrink: 0;
 }
 .pr-symbol.merged {
-  color: #7041c5;
+  color: var(--purple);
   background: none;
 }
 .pill {
@@ -448,14 +443,14 @@ h2 {
   padding: 1px 7px;
 }
 .pill.green {
-  color: #176e36;
-  background: #edf8f0;
-  border-color: #cfebd7;
+  color: var(--green);
+  background: var(--success-bg);
+  border-color: var(--success-border);
 }
 .pill.purple {
-  color: #7041c5;
-  background: #f4effc;
-  border-color: #dfd1f6;
+  color: var(--purple);
+  background: var(--done-bg);
+  border-color: var(--done-border);
 }
 .feed-heading {
   margin: 30px 0 12px;
@@ -476,7 +471,7 @@ h2 {
   height: 12px;
 }
 .activity-feed {
-  background: #fff;
+  background: var(--surface);
   border: 0;
   border-radius: 0;
 }
@@ -504,7 +499,7 @@ h2 {
   font-weight: 600;
 }
 .feed-title > span {
-  color: #525d6c;
+  color: var(--muted);
 }
 .feed-time {
   font-size: 12px;
@@ -613,11 +608,11 @@ h2 {
 .progress {
   height: 4px;
   margin-top: 10px;
-  background: #e6eaef;
+  background: var(--selected);
   border-radius: 2px;
 }
 .progress span {
-  background: #3b6c9c;
+  background: var(--green);
 }
 .next-step {
   display: flex;
@@ -648,12 +643,12 @@ h2 {
   gap: 10px;
   padding: 0;
   font-size: 12px;
-  color: #59636e;
+  color: var(--muted);
   line-height: 1.6;
 }
 .observer-note a {
   font-size: 12px;
-  color: #4b607a;
+  color: var(--muted);
 }
 .observer-note a .icon {
   width: 12px;
@@ -666,7 +661,7 @@ h2 {
 .readme,
 .run-list,
 .timeline-card {
-  background: #fff;
+  background: var(--surface);
   border-color: var(--border);
   border-radius: 4px;
 }
@@ -703,7 +698,7 @@ h2 {
 .pr-list-head,
 .code-head,
 .file-list-header {
-  background: #f5f6f8;
+  background: var(--soft);
 }
 .connection-error {
   margin: 16px 32px 0;
@@ -737,7 +732,7 @@ footer nav {
   .demo-bar {
     padding: 10px 24px;
     flex-wrap: wrap;
-    background: #fff;
+    background: var(--surface);
   }
   .directory-link {
     font-size: 12px;
@@ -769,7 +764,7 @@ footer nav {
   }
   .demo-bar {
     justify-content: start;
-    background: #fff;
+    background: var(--surface);
   }
   .playback {
     margin-left: auto;
@@ -808,7 +803,7 @@ footer nav {
     border-right: 0;
     border-bottom: 1px solid var(--border);
     padding: 0 12px;
-    background: #f6f8fa;
+    background: var(--soft);
   }
   .global-nav {
     flex-direction: row;
@@ -834,7 +829,7 @@ footer nav {
   .demo-bar {
     padding: 12px 20px;
     gap: 12px;
-    background: #fff;
+    background: var(--surface);
   }
   .environment-status {
     justify-content: space-between;
@@ -907,30 +902,30 @@ footer nav {
   }
   .editor-tabs > span {
     padding-left: 14px;
-    background: #fff;
+    background: var(--surface);
     border-top: 0;
-    border-right: 1px solid #d1d9e0;
+    border-right: 1px solid var(--border);
   }
   .editor-tabs {
     padding-right: 12px;
     font-size: 12px;
-    background: #f6f8fa;
-    border-bottom: 1px solid #d1d9e0;
+    background: var(--soft);
+    border-bottom: 1px solid var(--border);
   }
   .editor-tabs a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    color: #0969da;
+    color: var(--blue);
   }
   .editor-filebar {
     padding: 10px 15px 0;
-    color: #59636e;
+    color: var(--muted);
   }
   .editor-preview .ln {
     min-width: 37px;
     padding: 0 10px;
-    color: #6e7781;
+    color: var(--comment);
   }
   .workbench-pr {
     padding: 15px;
@@ -1009,7 +1004,7 @@ footer nav {
   }
   .demo-bar {
     padding: 12px 16px;
-    background: #fff;
+    background: var(--surface);
   }
   .global-nav a {
     font-size: 12px;
