@@ -13,7 +13,7 @@
     "test": "node --test --test-concurrency=1 prototype/social-state.test.mjs tests/*.test.mjs",
     "check": "npm run lint && npm test && npm run build && npm run test:dom && npm run test:serve",
     "lint": "eslint server scripts tests prototype/social.mjs prototype/social-state.mjs prototype/client.mjs",
-    "format": "prettier --write server scripts tests prototype/social.mjs prototype/social-state.mjs prototype/client.mjs prototype/social.css prototype/social.html vite.config.mjs eslint.config.mjs playwright.config.mjs",
+    "format": "prettier --write server scripts tests prototype/social.mjs prototype/social-state.mjs prototype/client.mjs prototype/social.css prototype/workspace.css prototype/social.html vite.config.mjs eslint.config.mjs playwright.config.mjs",
     "db:status": "node scripts/db-status.mjs",
     "db:backup": "node scripts/backup.mjs",
     "diagnostics": "node scripts/diagnostics.mjs",

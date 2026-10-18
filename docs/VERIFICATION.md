@@ -27,3 +27,15 @@ started. No unrelated caches, service settings, volumes or user files were remov
 
 The diagnostic retention command is explicit, not a background daemon. Verification
 receipts, databases and backups are outside its deletion boundary.
+
+## Subsequent visual refinement
+
+After the user's visual feedback, `npm run check` passed again: ESLint, five Node
+tests, the production build, the compiled DOM integration test and static-serving
+checks. The in-app browser was available for this pass. Desktop, intermediate and
+mobile screenshots, narrow overflow, preview launch, Escape and focus restoration
+were checked manually. See UI-AUDIT.md for scope and local screenshot locations.
+
+`npm run test:ui` was attempted and stopped before executing the test because
+`chromium_headless_shell-1248` is not installed. It is not reported as a passing
+browser suite. No database migration or scenario change was made in this pass.

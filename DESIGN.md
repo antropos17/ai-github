@@ -6,11 +6,18 @@ Operate/read mode. A restrained developer workspace, derived from the repository
 
 ## Tokens
 
-- Surface: white; secondary surface: #f6f8fa; text: #1f2328; secondary text: #58616d.
-- Border: #d1d9e0; links/focus: #0969da; success: #1a7f37; merged state: #8250df.
+- Canvas: #fafbfc; surface: white; secondary surface: #f5f6f8; text: #202631; secondary text: #606976.
+- Border: #e0e4e9; links/focus: #0969da; primary action: #242b36; success: #1f7b46; merged state: #7041c5.
+- Overview editor: #171d27, tab strip #1e2531, text #dbe3ed. Dark color is reserved for source code; other surfaces stay light.
 - Use the platform UI stack for an operational interface; use Consolas/monospace only for code and technical identifiers.
-- Body 14px with 1.6 line height, supporting copy 12–13px, page titles 24–26px. Code 13px desktop / 12px narrow viewport.
+- Body 14px with 1.55 line height; supporting copy 12–13px; metadata 12px; page titles 24px. Code 13px on repository pages; overview excerpt 12px across viewports.
 - 4px spacing base; group intervals 8/12/16/20/24/32px. Borders establish structure. Control radius 6px.
+
+## Composition
+
+One shared shell: a 68px header, a 216px navigation rail and a compact scenario toolbar. The overview leads with a real source excerpt, project preview and related PR, followed by a compact activity list. Agent identities and scenario progress form the supporting column. Avoid repeating explanatory cards above the work.
+
+At 1060px the supporting column moves below the main work; at 760px the navigation becomes a horizontal strip. At 480px supporting sections stack. Main content uses 32px desktop and 16–20px mobile gutters. Code scrolls inside its panel. Shared shell and overview styles live in `prototype/workspace.css`; repository, profile and PR details remain in `prototype/social.css`.
 
 ## Behavior
 

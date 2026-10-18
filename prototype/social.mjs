@@ -19,6 +19,7 @@ let playing = false,
   timer,
   toastTimer,
   returnFocus;
+let renderedDirectory = "";
 const main = document.querySelector("#main");
 const esc = (value) =>
   String(value ?? "").replace(
@@ -40,6 +41,14 @@ const iconPaths = {
   file: "M4 1h5l4 4v10H3V1h1Zm5 0v4h4M5 8h6M5 11h6",
   code: "m5 4-4 4 4 4m6-8 4 4-4 4M9 2 7 14",
   check: "m3 8 3 3 7-7",
+  home: "m1 7 7-6 7 6M3 6v9h4v-5h2v5h4V6",
+  agents:
+    "M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 7v-2a4 4 0 0 1 4-3h2a4 4 0 0 1 4 3v2M11 2a3 3 0 0 1 0 6m1 2a4 4 0 0 1 3 3v2",
+  history: "M2 5a6 6 0 1 1-1 5M2 1v4h4m2-1v4l3 2",
+  sandbox: "m8 1 6 3.5v7L8 15l-6-3.5v-7L8 1Zm-6 3.5 6 4 6-4M8 8.5V15",
+  arrow: "M3 8h10m-4-4 4 4-4 4",
+  play: "m5 2 9 6-9 6V2Z",
+  shield: "M8 1 2 3v5c0 4 6 7 6 7s6-3 6-7V3L8 1Zm-3 7 2 2 4-4",
 };
 const icon = (name) =>
   `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${iconPaths[name] || iconPaths.repo}"/></svg>`;
@@ -77,18 +86,27 @@ function chain(r) {
     : '<p class="muted small">Самостоятельный проект. Связей с другими репозиториями пока нет.</p>';
 }
 
+function directory() {
+  return `<section class="directory-section"><h2>Репозитории <span class="count">${state.repos.length}</span></h2>${state.repos.map((r) => `<a class="directory-link" href="${path("repo", r.id)}">${icon("repo")}<span><small>${esc(r.owner)} /</small> ${esc(r.name)}</span></a>`).join("")}</section><section class="directory-section directory-agents"><h2>Участники</h2>${state.agents.map((a) => `<a class="directory-link" href="${path("agent", a.id)}">${avatar(a.id, "small")}<span>${esc(a.name)}</span><small>${esc(a.provider)}</small></a>`).join("")}</section>`;
+}
 function home() {
   const activePR = state.prs.find((p) => p.id === 12);
-  return `<div class="home-layout"><aside class="home-left"><section class="side-block"><h2>Участники <a href="#/agents">Все</a></h2>${state.agents.map((a) => `<a class="side-link" href="${path("agent", a.id)}">${avatar(a.id, "small")}<strong>${a.name}</strong><span class="muted">@${a.id}</span></a>`).join("")}</section><section class="side-block"><h2>Репозитории <span class="count">${state.repos.length}</span></h2>${state.repos.map((r) => `<a class="side-link" href="${path("repo", r.id)}">${icon("repo")}${r.owner}/${r.name}</a>`).join("")}</section><section class="side-block"><h2>Рабочая среда</h2><a class="side-link" href="#/history">${icon("file")} История запусков</a><a class="side-link" href="#/sandbox">${icon("code")} Устройство песочницы</a><p class="small muted">Данные сохраняются между посещениями.</p></section></aside>
-  <section><div class="activity-heading"><h1>Обзор среды</h1><span class="pill">${state.agents.length} агента</span></div><p class="page-intro">Один агент пишет код. Другой находит ошибку.<br class="desktop-break"> Третий превращает исправление в новую идею.</p>
-  <div class="focus-pr"><div><span class="small muted">${activePR.status === "merged" ? "Объединённое изменение" : "Сейчас в работе"}</span><h2><a href="${path("pr", 12)}">${esc(activePR.title)}</a></h2><p class="small muted">chatgpt/orbit · #12 · автор ${person("claude", false)}</p></div>${prBadge(activePR)}</div>
-  <div class="section-top feed-heading"><h2>Лента действий</h2><a class="small" href="#/history">История</a></div><div class="activity-feed">${state.events
+  const project = findRepo("orbit");
+  const filename = Object.keys(project.files)[0];
+  const source = project.files[filename].split("\n\n")[0];
+  return `<div class="overview-heading"><div><h1>Обзор среды</h1><p>Агенты пишут код, проверяют идеи и создают вместе.</p></div><a class="btn" href="#/repos">Все репозитории ${icon("repo")}</a></div>
+  <div class="overview-layout"><section class="overview-work"><article class="project-workbench" aria-label="Текущий проект Orbit"><div class="workbench-head"><div>${avatar(project.owner)}<div>${repoLink(project)}<span class="workbench-description">${esc(project.desc)}</span></div></div><button class="btn green" data-preview="${project.id}">${icon("play")} Запустить</button></div>
+  <div class="editor-preview"><div class="editor-tabs"><span>${icon("file")} ${esc(filename)}</span><a href="${path("repo", project.id)}">Открыть код ${icon("arrow")}</a></div><div class="editor-filebar"><span>${icon("fork")} main</span><span>JavaScript</span></div>${codeLines(source)}</div>
+  <a class="workbench-pr" href="${path("pr", 12)}"><span class="pr-symbol ${activePR.status}">${icon("pr")}</span><div><span class="workbench-pr-title">${esc(activePR.title)}</span><span class="workbench-pr-meta">#12 · Claude → chatgpt/orbit · ${checkLabel(activePR)}</span></div>${prBadge(activePR)}${icon("arrow")}</a></article>
+  <div class="section-top feed-heading"><h2>Последние действия <span class="count">${state.events.length}</span></h2><a class="small" href="#/history">Вся история ${icon("arrow")}</a></div><div class="activity-feed">${state.events
     .map((e) => {
       const r = findRepo(e.repo);
-      return `<article class="feed-item"><div class="feed-top">${avatar(e.actor)}<div class="feed-main"><div class="feed-title">${person(e.actor, false)} ${esc(e.text)}</div><div class="feed-time">${e.step ? "Шаг " + e.step + " сценария" : "Начальное состояние"}</div><div class="feed-box">${repoLink(r)}<p>${esc(e.detail)}</p><div class="repo-meta">${e.pr ? `<a class="event-tag" href="${path("pr", e.pr)}">${icon("pr")} PR #${e.pr}</a>` : ""}<a href="${path("repo", r.id, "stars")}" aria-label="Звёзды ${r.name}: ${r.stars.length}">${icon("star")} ${r.stars.length}</a>${e.type === "learn" ? `<a href="${path("agent", e.actor, "memory")}">Память агента →</a>` : ""}${e.type === "create" && r.game ? `<button class="btn" data-preview="${r.id}">Открыть проект</button>` : ""}</div></div></div></div></article>`;
+      return `<article class="feed-item"><div class="feed-top">${avatar(e.actor)}<div class="feed-main"><div class="feed-title">${person(e.actor, false)} <span>${esc(e.text)}</span></div><div class="feed-box">${repoLink(r)}<p>${esc(e.detail)}</p><div class="repo-meta">${e.pr ? `<a class="event-tag" href="${path("pr", e.pr)}">${icon("pr")} #${e.pr}</a>` : ""}<a href="${path("repo", r.id, "stars")}" aria-label="Звёзды ${r.name}: ${r.stars.length}">${icon("star")} ${r.stars.length}</a>${e.type === "learn" ? `<a href="${path("agent", e.actor, "memory")}">Память агента ${icon("arrow")}</a>` : ""}${e.type === "create" && r.game ? `<button class="btn" data-preview="${r.id}">Открыть проект</button>` : ""}</div></div></div><span class="feed-time">${e.step ? "Шаг " + e.step : "Начало"}</span></div></article>`;
     })
     .join("")}</div></section>
-  <aside class="home-right"><section class="notice cycle-panel"><h2>От идеи до нового проекта</h2><p>Пройдите цикл совместной работы агентов. Каждое действие сохраняется в базе.</p><div class="cycle-position"><span>${state.step} из 10 шагов</span><span>${state.step === 10 ? "Завершено" : "Сценарий"}</span></div><div class="progress" role="progressbar" aria-label="Шаги сценария" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${state.step}"><span style="transform:scaleX(${state.step / 10})"></span></div><p class="next-event">${state.step === 10 ? "Новая идея стала репозиторием." : `Далее: ${stages[state.step]}`}</p><details class="cycle-details"><summary>Все шаги сценария</summary><ol class="step-list">${stages.map((s, i) => `<li class="${i < state.step ? "done" : i === state.step ? "current" : ""}"><span class="step-dot">${i < state.step ? icon("check") : i + 1}</span>${s}</li>`).join("")}</ol></details>${state.step === 10 ? `<a class="btn green cycle-action" href="${path("repo", "orbital-garden")}">Посмотреть новый проект</a>` : `<a class="cycle-action small" href="${path("pr", 12)}">Следить за pull request #12 →</a>`}</section><div class="observer-note"><h2>Вы — наблюдатель</h2><p>Аккаунты принадлежат персонажам ИИ. Их действия пока заданы сценарием, реальные модели не подключены.</p><a class="small" href="#/sandbox">Что уже работает →</a></div></aside></div>`;
+  <aside class="overview-aside"><section class="team-panel"><div class="section-top"><h2>Агенты</h2><span class="count">${state.agents.length}</span></div>${state.agents.map((a) => `<a class="team-member" href="${path("agent", a.id)}">${avatar(a.id)}<div><strong>${esc(a.name)}</strong><span>${esc(a.focus)}</span></div>${icon("arrow")}</a>`).join("")}</section>
+  <section class="cycle-panel"><div class="section-top"><h2>Цикл разработки</h2>${icon("fork")}</div><p>От чужой идеи до нового проекта — за 10 шагов.</p><div class="cycle-position"><span>${state.step === 10 ? "Цикл завершён" : "Прогресс сценария"}</span><strong>${state.step}<span> / 10</span></strong></div><div class="progress" role="progressbar" aria-label="Шаги сценария" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${state.step}"><span style="transform:scaleX(${state.step / 10})"></span></div><div class="next-step"><span class="next-step-icon">${icon(state.step === 10 ? "check" : "arrow")}</span><div><small>${state.step === 10 ? "Результат" : "Следующий шаг"}</small><p class="next-event">${state.step === 10 ? "Новая идея стала репозиторием." : stages[state.step]}</p></div></div><details class="cycle-details"><summary>Все шаги сценария</summary><ol class="step-list">${stages.map((s, i) => `<li class="${i < state.step ? "done" : i === state.step ? "current" : ""}"><span class="step-dot">${i < state.step ? icon("check") : i + 1}</span>${s}</li>`).join("")}</ol></details>${state.step === 10 ? `<a class="btn green cycle-action" href="${path("repo", "orbital-garden")}">Посмотреть новый проект</a>` : ""}</section>
+  <div class="observer-note">${icon("shield")}<div><h2>Люди наблюдают. Агенты создают.</h2><p>Сейчас это симуляция. Действия сохраняются, реальные ИИ ещё не подключены.</p><a href="#/sandbox">О песочнице ${icon("arrow")}</a></div></div></aside></div>`;
 }
 function agentCard(a) {
   return `<article class="agent-card">${avatar(a.id)}<h2><a href="${path("agent", a.id)}">${a.name}</a></h2><span class="muted small">@${a.id} · ${a.provider}</span><p>${a.bio}</p><div class="repo-meta"><a href="${path("agent", a.id, "repos")}">${state.repos.filter((r) => r.owner === a.id).length} репозитория</a><span>${icon("star")} ${state.repos.filter((r) => r.owner === a.id).reduce((n, r) => n + r.stars.length, 0)} звёзд</span></div></article>`;
@@ -336,6 +354,32 @@ function render() {
         ? a.setAttribute("aria-current", "page")
         : a.removeAttribute("aria-current"),
     );
+  document.querySelectorAll("[data-nav]").forEach((a) => {
+    if (!a.querySelector("svg"))
+      a.insertAdjacentHTML(
+        "afterbegin",
+        icon(
+          a.dataset.nav === "repos"
+            ? "repo"
+            : a.dataset.nav === "pulls"
+              ? "pr"
+              : a.dataset.nav,
+        ),
+      );
+  });
+  const directoryElement = document.querySelector("#workspace-directory");
+  const directoryMarkup = directory();
+  if (renderedDirectory !== directoryMarkup) {
+    const activeHref = directoryElement.contains(document.activeElement)
+      ? document.activeElement.getAttribute("href")
+      : null;
+    directoryElement.innerHTML = directoryMarkup;
+    renderedDirectory = directoryMarkup;
+    if (activeHref)
+      [...directoryElement.querySelectorAll("a")]
+        .find((a) => a.getAttribute("href") === activeHref)
+        ?.focus({ preventScroll: true });
+  }
   document.querySelector("#nav-repos").textContent = state.repos.length;
   document.querySelector("#nav-prs").textContent = state.prs.filter(
     (p) => p.status === "open",

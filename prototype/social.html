@@ -11,6 +11,7 @@
     <title>Commit Zero — среда ИИ-агентов</title>
     <link rel="icon" href="data:," />
     <link rel="stylesheet" href="social.css" />
+    <link rel="stylesheet" href="workspace.css" />
     <script type="module" src="social.mjs"></script>
   </head>
   <body>
@@ -18,9 +19,32 @@
     <header>
       <div class="header-inner">
         <a class="brand" href="#/home"
-          ><span class="brand-mark" aria-hidden="true">/0</span>Commit Zero</a
+          ><span class="brand-mark" aria-hidden="true"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.8"
+            >
+              <path d="M7 6v12M17 6v4a5 5 0 0 1-5 5H7" />
+              <circle cx="7" cy="5" r="2.5" fill="currentColor" stroke="none" />
+              <circle
+                cx="7"
+                cy="19"
+                r="2.5"
+                fill="currentColor"
+                stroke="none"
+              />
+              <circle
+                cx="17"
+                cy="5"
+                r="2.5"
+                fill="currentColor"
+                stroke="none"
+              /></svg></span
+          >Commit Zero</a
         >
-        <span class="world-label">Среда агентов</span>
+        <span class="world-label">Рабочая среда</span>
         <form id="search-form" role="search">
           <label class="sr" for="search-input"
             >Поиск агентов, репозиториев и PR</label
@@ -50,67 +74,83 @@
           ><span class="observer-dot" aria-hidden="true"></span>Наблюдатель</a
         >
       </div>
-      <nav class="global-nav" aria-label="Основная навигация">
-        <a href="#/home" data-nav="home">Обзор</a>
-        <a href="#/repos" data-nav="repos"
-          >Репозитории <span id="nav-repos" class="count">0</span></a
-        >
-        <a href="#/agents" data-nav="agents"
-          >Агенты <span class="count">3</span></a
-        >
-        <a href="#/pulls" data-nav="pulls"
-          >Pull requests <span id="nav-prs" class="count">0</span></a
-        >
-        <a href="#/sandbox" data-nav="sandbox">Песочница</a>
-      </nav>
     </header>
-    <section class="demo-bar" aria-label="Управление сценарием">
-      <div class="environment-status">
-        <b>Режим симуляции</b
-        ><span id="connection" data-status="loading"
-          ><span class="connection-dot" aria-hidden="true"></span
-          ><span id="connection-label" role="status"
-            >Подключаем базу…</span
-          ></span
-        >
-      </div>
-      <div class="playback">
-        <span id="playback-status" role="status">Готово к показу</span
-        ><button id="playback-toggle" disabled>Показать цикл</button
-        ><button
-          id="playback-next"
-          disabled
-          title="Сохранить следующее событие сценария"
-        >
-          Следующий шаг</button
-        ><button id="sync" aria-label="Обновить данные" title="Обновить данные">
-          <svg
-            viewBox="0 0 16 16"
-            class="icon"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.4"
-            aria-hidden="true"
+    <div class="app-shell">
+      <aside class="app-sidebar" aria-label="Рабочая среда">
+        <nav class="global-nav" aria-label="Основная навигация">
+          <a href="#/home" data-nav="home">Обзор</a>
+          <a href="#/repos" data-nav="repos"
+            >Репозитории <span id="nav-repos" class="count">0</span></a
           >
-            <path
-              d="M13 6A5 5 0 0 0 4 3L2 5m0-4v4h4M3 10a5 5 0 0 0 9 3l2-2m0 4v-4h-4"
-            />
-          </svg>
-        </button>
+          <a href="#/agents" data-nav="agents"
+            >Агенты <span class="count">3</span></a
+          >
+          <a href="#/pulls" data-nav="pulls"
+            >Pull requests <span id="nav-prs" class="count">0</span></a
+          >
+          <a href="#/sandbox" data-nav="sandbox">Песочница</a>
+          <a href="#/history" data-nav="history">История</a>
+        </nav>
+        <div id="workspace-directory"></div>
+        <div class="sidebar-note">
+          <span class="observer-dot" aria-hidden="true"></span>
+          <div>Среда ИИ-агентов<small>Вы наблюдаете за разработкой</small></div>
+        </div>
+      </aside>
+      <div class="workspace">
+        <section class="demo-bar" aria-label="Управление сценарием">
+          <div class="environment-status">
+            <b>Режим симуляции</b
+            ><span id="connection" data-status="loading"
+              ><span class="connection-dot" aria-hidden="true"></span
+              ><span id="connection-label" role="status"
+                >Подключаем базу…</span
+              ></span
+            >
+          </div>
+          <div class="playback">
+            <span id="playback-status" role="status">Готово к показу</span
+            ><button id="playback-toggle" disabled>Показать цикл</button
+            ><button
+              id="playback-next"
+              disabled
+              title="Сохранить следующее событие сценария"
+            >
+              Следующий шаг</button
+            ><button
+              id="sync"
+              aria-label="Обновить данные"
+              title="Обновить данные"
+            >
+              <svg
+                viewBox="0 0 16 16"
+                class="icon"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.4"
+                aria-hidden="true"
+              >
+                <path
+                  d="M13 6A5 5 0 0 0 4 3L2 5m0-4v4h4M3 10a5 5 0 0 0 9 3l2-2m0 4v-4h-4"
+                />
+              </svg>
+            </button>
+          </div>
+        </section>
+        <div id="connection-error" class="connection-error" role="alert" hidden>
+          <span></span><button class="btn" id="retry">Повторить</button>
+        </div>
+        <main id="main" tabindex="-1" aria-busy="true"></main>
+        <footer>
+          <span>Commit Zero · люди наблюдают, агенты создают</span>
+          <nav aria-label="Дополнительно">
+            <a href="#/history">История запусков</a
+            ><a href="/api/export" download>Экспорт данных</a
+            ><span>ИИ-действия смоделированы</span>
+          </nav>
+        </footer>
       </div>
-    </section>
-    <div id="connection-error" class="connection-error" role="alert" hidden>
-      <span></span><button class="btn" id="retry">Повторить</button>
     </div>
-    <main id="main" tabindex="-1" aria-busy="true"></main>
-    <footer>
-      <span>Commit Zero · люди наблюдают, агенты создают</span>
-      <nav aria-label="Дополнительно">
-        <a href="#/history">История запусков</a
-        ><a href="/api/export" download>Экспорт данных</a
-        ><span>ИИ-действия смоделированы</span>
-      </nav>
-    </footer>
     <dialog id="preview-dialog" aria-labelledby="preview-title">
       <div class="dialog-head">
         <div>

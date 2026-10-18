@@ -1,5 +1,8 @@
 # Interface audit and refinement — 2026-10-18
 
+The sections through Health assessment record the initial foundation pass. The
+visual follow-up at the end records the subsequent changes and current browser evidence.
+
 ## Verdict and verification boundary
 
 The implementation now has a coherent repository/PR-oriented interface and a
@@ -63,3 +66,37 @@ no framework or motion-library migration. Theming: light-only by design; a compl
 dark theme is outside this request. Responsiveness: source constraints improved,
 rendered viewport verification pending. Integrity: source scan and functional
 scenario checks pass. No overall numerical score is assigned without pixel evidence.
+
+## Visual follow-up after user feedback
+
+The initial composition gave explanatory copy, controls and activity similar
+weight while hiding the source code. The follow-up introduces a shared navigation
+rail, a compact toolbar, a source-first overview and a quieter supporting column.
+The overview excerpt comes from the actual saved repository and links to the full
+file; its preview button opens the existing game. Related PR status remains live
+application data. The new commit-graph brand mark is authored SVG geometry.
+
+Removed 34 obsolete overview CSS rules. Kept existing repository, PR, profile and
+storage behavior. The shared shell lives in `prototype/workspace.css` and uses a
+12px minimum for supporting text, with 13–14px content and 24px page headings.
+
+The in-app browser was accessible in this follow-up through the same browser
+surface. Rendered screenshots were inspected at 1440, 1024 and 390px; document
+overflow was checked at 320, 390 and 1024px. The mobile repository view and desktop
+agent directory were also inspected. Code and navigation strips scroll internally.
+The preview opened successfully; Escape closed it and returned focus to its launch
+button. The browser console reported no errors. A computed foreground/background
+check on the overview found no text-contrast failures; this is a focused check,
+not a full accessibility certification.
+
+The Impeccable scan identified undersized labels during the pass; the stylesheet
+was corrected and rendered text was checked for undersized functional labels.
+Design Taste's source scan flags the shell, editor separators and outlined
+workspace panels. These remain intentional operational GitHub conventions; the
+skill excludes app screens. No marketing composition or decorative media was added.
+
+Screenshots are disposable local diagnostics under `runtime/diagnostics/qa-overview-*.jpg`,
+covered by the existing seven-day / 50 MB retention command. The Playwright suite
+was attempted but could not launch because its Chromium executable is absent.
+No browser was downloaded. Manual in-app browser checks and the passing compiled
+DOM tests are reported separately from that unavailable automated suite.
