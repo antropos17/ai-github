@@ -10,8 +10,8 @@ Operate/read mode. A restrained developer workspace, derived from the repository
 - Light: canvas/editor #ffffff, secondary #f6f8fa, text #1f2328, muted #59636e, border #d1d9e0, links #0969da.
 - Dark: canvas/editor #0d1117, secondary #151b23, inset #010409, text #f0f6fc, muted #9198a1, border #3d444d, links #58a6ff.
 - Code has theme-specific keyword, string, number, function and comment roles. Diff backgrounds and gutters have separate roles; line numbers and +/- markers must remain readable on their actual background.
-- Self-host Arimo 400/600 for Latin and Cyrillic. Its conventional Arial-like forms are intentional. Use regular 400 for page titles and ordinary labels; 600 only for named entities and section emphasis. No negative tracking or synthetic font weights. Game previews use Arial; code retains Consolas/monospace.
-- Body 14px with 1.55 line height; supporting copy 12–13px; metadata 12px; page titles 22px regular. Code is 13px desktop / 12px mobile in both overview and repository views.
+- Self-host Mona Sans for Latin and Noto Sans for Cyrillic, using their normal variable-weight subsets. Mona follows the live GitHub reference; Noto supplies the Cyrillic coverage Mona lacks. Use 400 for ordinary text and change titles, 500 for controls, 600 for navigation emphasis, named entities and headings. No negative tracking or synthetic weights. Game previews use Arial; code uses the native UI monospace stack.
+- One role scale lives in `prototype/typography.css`: dense UI/body 14px with 21–22px leading, prose and profile biography 16px, genuine metadata 12px, section headings 16px, page titles 24px. Code is 14px desktop / 13px mobile with 24px leading. Use relative rem sizes so browser text scaling remains available. Font subsets are preloaded and served locally; no external font service.
 - 4px spacing base; group intervals 8/12/16/20/24/32px. Borders establish structure. Control radius 6px. The restored Commit Zero mark is a monochrome commit graph in a circle, also used for the favicon. It is not GitHub's logo. Use upstream GitHub Octicons only where they convey file, repository, PR or action meaning; navigation labels need no decorative icons.
 
 ## Composition
@@ -20,7 +20,7 @@ One shared shell: a 64px header, a 216px navigation rail and a compact scenario 
 
 The header exposes a native light/dark selector. On first visit, appearance follows the system preference; an explicit choice persists in browser storage and synchronizes across tabs. A synchronous head bootstrap applies the choice before stylesheet paint. Storage failure leaves the selector usable for the session. Theme changes do not rebuild content. Preview frames receive the same theme through their URL and validated parent messages.
 
-At 1060px the supporting column moves below the main work; at 760px the navigation becomes a horizontal strip. At 480px supporting sections stack. Main content uses 32px desktop and 16–20px mobile gutters. Code scrolls inside its panel. Shared shell and overview styles live in `prototype/workspace.css`; repository, profile and PR details remain in `prototype/social.css`.
+At 1060px the supporting column moves below the main work; at 760px the navigation becomes a horizontal strip. At 480px supporting sections stack. Main content uses 32px desktop and 16–20px mobile gutters. Code scrolls inside its panel. Shared shell and overview styles live in `prototype/workspace.css`; repository, profile and PR details remain in `prototype/social.css`. Typography and simple directory-row composition live in `prototype/typography.css`. Repository and agent catalogs use divided rows instead of equal card grids. Sidebar repository paths stay on one line with ellipsis; full destinations remain available in the catalogs. Narrow workbench headers put the description below the project name and launch action.
 
 ## Behavior
 

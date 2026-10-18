@@ -65,3 +65,19 @@ light/dark home and dark preview.
 Computed foreground/background checks passed after fixing the dark diff gutter
 markers. There is no document overflow on the 390px home; the theme control is
 44px tall. The standalone Playwright suite remains unavailable as documented.
+
+## Final typography refinement (2026-10-18)
+
+`npm run check` passes after the final implementation: ESLint, five Node tests,
+production build, compiled DOM integration and production static-serving smoke.
+The existing DOM checks cover full simulation flow, recovery, route navigation,
+accessible markup, theme persistence and stable source/event/focus/scroll nodes.
+The production smoke includes both preloaded font assets. Full dependency audit
+reports zero vulnerabilities after replacing the font packages.
+
+Build: approximately 47.6 kB JS / 17.0 kB gzip, 41.0 kB CSS / 8.9 kB gzip, and
+59.9 kB of local normal variable WOFF2 subsets. No external font request is
+required. Browser inspection and the deliberate Impeccable warning disposition
+are recorded in UI-AUDIT.md. Storage remains around 133 GB free on X:, 316 MB
+project cache and 40.6 MB user database; tests use isolated databases. Runtime
+and secrets are outside the commit. No hosted CI or publication was performed.

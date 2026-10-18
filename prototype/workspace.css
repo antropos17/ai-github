@@ -1,53 +1,7 @@
-@font-face {
-  font-family: "Arimo";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("@fontsource/arimo/files/arimo-latin-400-normal.woff2")
-    format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193,
-    U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Arimo";
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url("@fontsource/arimo/files/arimo-cyrillic-400-normal.woff2")
-    format("woff2");
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
-@font-face {
-  font-family: "Arimo";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("@fontsource/arimo/files/arimo-latin-600-normal.woff2")
-    format("woff2");
-  unicode-range:
-    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC,
-    U+0304, U+0308, U+0329, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193,
-    U+2212, U+2215, U+FEFF, U+FFFD;
-}
-@font-face {
-  font-family: "Arimo";
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url("@fontsource/arimo/files/arimo-cyrillic-600-normal.woff2")
-    format("woff2");
-  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
-}
 /* Shared application shell and the overview's repository-first composition. */
 :root {
   color: var(--text);
   background: var(--surface);
-  font-family: "Arimo", Arial, Helvetica, sans-serif;
-}
-body {
-  line-height: 1.55;
 }
 header {
   background: var(--surface);
@@ -59,9 +13,6 @@ header {
   gap: 24px;
 }
 .brand {
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: 0;
   gap: 0;
 }
 #search-form {
@@ -70,15 +21,11 @@ header {
   background: var(--soft);
 }
 #search-form input {
-  font-size: 12px;
   padding: 8px 12px;
 }
 #search-form button {
   min-height: 34px;
   min-width: 34px;
-}
-.observer {
-  font-size: 12px;
 }
 .observer-dot {
   width: 6px;
@@ -107,7 +54,6 @@ header {
   margin: 0;
 }
 .global-nav a {
-  font-size: 13px;
   padding: 9px 12px;
   gap: 10px;
   min-height: 38px;
@@ -125,7 +71,6 @@ header {
 .global-nav a[aria-current] {
   color: var(--text);
   background: var(--selected);
-  font-weight: 600;
 }
 .global-nav a[aria-current]:after {
   content: none;
@@ -133,9 +78,7 @@ header {
 .count {
   background: var(--selected);
   color: var(--muted);
-  font-size: 12px;
   padding: 1px 6px;
-  line-height: 1.5;
   border-radius: 3px;
 }
 .directory-section {
@@ -144,9 +87,6 @@ header {
 }
 .directory-section h2 {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -159,7 +99,6 @@ header {
   gap: 9px;
   color: var(--text);
   padding: 8px 6px;
-  font-size: 12px;
   min-height: 34px;
   border-radius: 4px;
   overflow-wrap: anywhere;
@@ -175,7 +114,6 @@ header {
 }
 .directory-link small {
   color: var(--muted);
-  font-size: 12px;
 }
 .directory-link .avatar.small {
   width: 23px;
@@ -192,35 +130,26 @@ header {
   min-height: 59px;
   padding: 10px 32px;
   background: var(--surface);
-  font-size: 12px;
   gap: 12px;
 }
 .environment-status {
   gap: 12px;
 }
 .environment-status > b {
-  font-size: 12px;
-  font-weight: 400;
   padding: 3px 8px;
   border: 1px solid var(--border);
   border-radius: 4px;
 }
-#connection {
-  font-size: 12px;
-}
 .playback {
   gap: 7px;
-  font-size: 12px;
 }
 #playback-status {
   margin-right: 5px;
 }
 .playback button,
 .btn {
-  font-size: 12px;
   min-height: 32px;
   padding: 5px 11px;
-  font-weight: 400;
   border-radius: 4px;
 }
 .playback #playback-toggle {
@@ -246,16 +175,8 @@ main {
 }
 h1 {
   color: var(--text);
-  font-size: 22px;
-  font-weight: 400;
-  letter-spacing: 0;
-}
-h2 {
-  font-weight: 600;
 }
 .page-intro {
-  font-size: 13px;
-  line-height: 1.65;
   margin-bottom: 28px;
 }
 .overview-heading {
@@ -267,7 +188,6 @@ h2 {
 }
 .overview-heading h1 {
   margin: 0;
-  font-size: 22px;
 }
 .overview-layout {
   display: grid;
@@ -306,7 +226,6 @@ h2 {
 }
 .workbench-head .repo-name {
   color: var(--text);
-  font-size: 14px;
 }
 .workbench-head .repo-name .icon {
   display: none;
@@ -314,7 +233,6 @@ h2 {
 .workbench-description {
   display: block;
   color: var(--muted);
-  font-size: 12px;
   margin-top: 3px;
 }
 .workbench-head .btn {
@@ -334,7 +252,6 @@ h2 {
   align-items: center;
   padding-right: 16px;
   background: var(--soft);
-  font-size: 12px;
   border-bottom: 1px solid var(--border);
   gap: 12px;
 }
@@ -364,7 +281,6 @@ h2 {
   justify-content: space-between;
   padding: 12px 20px 0;
   color: var(--muted);
-  font-size: 12px;
 }
 .editor-filebar .icon {
   width: 12px;
@@ -375,10 +291,6 @@ h2 {
   padding: 14px 0 22px;
   max-height: 330px;
   scrollbar-color: auto;
-}
-.editor-preview .code-lines {
-  font-size: 12px;
-  line-height: 23px;
 }
 .editor-preview .ln {
   color: var(--comment);
@@ -414,13 +326,9 @@ h2 {
 }
 .workbench-pr-title {
   display: block;
-  font-size: 13px;
-  font-weight: 400;
-  line-height: 1.5;
 }
 .workbench-pr-meta {
   display: block;
-  font-size: 12px;
   color: var(--muted);
   margin-top: 5px;
 }
@@ -439,7 +347,6 @@ h2 {
   background: none;
 }
 .pill {
-  font-size: 12px;
   padding: 1px 7px;
 }
 .pill.green {
@@ -459,12 +366,10 @@ h2 {
   display: flex;
   gap: 9px;
   align-items: center;
-  font-size: 14px;
   margin: 0;
 }
 .feed-heading > a {
   color: var(--muted);
-  font-size: 12px;
 }
 .feed-heading > a .icon {
   width: 12px;
@@ -491,18 +396,10 @@ h2 {
   padding: 5px;
   border-radius: 4px;
 }
-.feed-title {
-  font-size: 13px;
-  line-height: 1.6;
-}
-.feed-title .person {
-  font-weight: 600;
-}
 .feed-title > span {
   color: var(--muted);
 }
 .feed-time {
-  font-size: 12px;
   color: var(--muted);
   white-space: nowrap;
   margin-top: 2px;
@@ -510,21 +407,14 @@ h2 {
 .feed-box {
   margin-top: 6px;
 }
-.feed-box .repo-name {
-  font-size: 12px;
-  font-weight: 400;
-}
 .feed-box .repo-name .icon {
   width: 12px;
   height: 12px;
 }
 .feed-box p {
-  font-size: 13px;
   margin: 5px 0 7px;
-  line-height: 1.6;
 }
 .feed-box .repo-meta {
-  font-size: 12px;
   gap: 13px;
 }
 .feed-box .repo-meta a {
@@ -544,7 +434,6 @@ h2 {
   margin-bottom: 12px;
 }
 .overview-aside .section-top h2 {
-  font-size: 13px;
   margin: 0;
 }
 .overview-aside .section-top > .icon {
@@ -576,34 +465,24 @@ h2 {
 }
 .team-member strong {
   display: block;
-  font-size: 12px;
-  font-weight: 600;
 }
 .team-member div > span {
   display: block;
-  font-size: 12px;
   color: var(--muted);
   margin-top: 2px;
 }
 .cycle-panel > p {
   color: var(--muted);
-  font-size: 12px;
-  line-height: 1.7;
 }
 .cycle-position {
-  font-size: 12px;
   margin-top: 22px;
   align-items: center;
 }
 .cycle-position strong {
   color: var(--text);
-  font-size: 13px;
-  font-weight: 600;
 }
 .cycle-position strong span {
   color: var(--muted);
-  font-size: 12px;
-  font-weight: 400;
 }
 .progress {
   height: 4px;
@@ -621,41 +500,29 @@ h2 {
   margin: 22px 0 12px;
 }
 .next-step small {
-  font-size: 12px;
   color: var(--muted);
   display: block;
   margin-bottom: 4px;
 }
 .next-event {
   margin: 0 !important;
-  font-size: 12px;
-  line-height: 1.6;
 }
 .cycle-details summary {
-  font-size: 12px;
   padding: 8px 0;
-}
-.step-list li {
-  font-size: 12px;
 }
 .observer-note {
   display: block;
   gap: 10px;
   padding: 0;
-  font-size: 12px;
   color: var(--muted);
-  line-height: 1.6;
 }
 .observer-note a {
-  font-size: 12px;
   color: var(--muted);
 }
 .observer-note a .icon {
   width: 12px;
   height: 12px;
 }
-.repo-card,
-.agent-card,
 .pr-list,
 .code-panel,
 .readme,
@@ -665,36 +532,6 @@ h2 {
   border-color: var(--border);
   border-radius: 4px;
 }
-.repo-card {
-  padding: 22px;
-}
-.repo-card .repo-name {
-  font-size: 15px;
-}
-.repo-card p {
-  font-size: 13px;
-}
-.repo-card .card-title {
-  align-items: start;
-}
-.repo-header h1 {
-  font-size: 22px;
-}
-.agent-card {
-  padding: 24px;
-}
-.agent-card .avatar {
-  border-radius: 4px;
-  width: 54px;
-  height: 54px;
-  padding: 12px;
-}
-.agent-card h2 {
-  font-size: 17px;
-}
-.agent-card p {
-  font-size: 13px;
-}
 .pr-list-head,
 .code-head,
 .file-list-header {
@@ -703,19 +540,16 @@ h2 {
 .connection-error {
   margin: 16px 32px 0;
   max-width: none;
-  font-size: 13px;
 }
 footer {
   margin: auto 32px 0;
   padding: 20px 0;
-  font-size: 12px;
   gap: 12px;
   width: auto;
   max-width: none;
   flex-wrap: wrap;
 }
 footer nav {
-  font-size: 12px;
   gap: 14px;
 }
 @media (max-width: 1240px) {
@@ -733,12 +567,6 @@ footer nav {
     padding: 10px 24px;
     flex-wrap: wrap;
     background: var(--surface);
-  }
-  .directory-link {
-    font-size: 12px;
-  }
-  .directory-link small {
-    font-size: 12px;
   }
   .workbench-description {
     max-width: 32ch;
@@ -778,9 +606,6 @@ footer nav {
     gap: 12px;
   }
   .brand {
-    font-size: 16px;
-    font-weight: 600;
-    letter-spacing: 0;
     gap: 0;
   }
   .observer {
@@ -793,7 +618,6 @@ footer nav {
     margin: 0;
   }
   #search-form input {
-    font-size: 16px;
     padding: 8px 11px;
   }
   .app-shell {
@@ -813,7 +637,6 @@ footer nav {
     scrollbar-width: thin;
   }
   .global-nav a {
-    font-size: 12px;
     min-height: 42px;
     padding: 8px 10px;
     flex-shrink: 0;
@@ -834,14 +657,10 @@ footer nav {
   .environment-status {
     justify-content: space-between;
     width: 100%;
-    font-size: 12px;
   }
   .environment-status > b {
     padding: 0;
     border: 0;
-  }
-  #connection {
-    font-size: 12px;
   }
   .playback {
     width: 100%;
@@ -865,7 +684,6 @@ footer nav {
     margin-bottom: 24px;
   }
   .overview-heading h1 {
-    font-size: 22px;
     margin: 0;
   }
   .overview-layout {
@@ -876,9 +694,7 @@ footer nav {
     gap: 12px;
   }
   .workbench-description {
-    font-size: 12px;
     max-width: 29ch;
-    line-height: 1.6;
   }
   .workbench-head .btn {
     min-height: 40px;
@@ -892,10 +708,6 @@ footer nav {
     height: 30px;
     padding: 6px;
   }
-  .editor-preview .code-lines {
-    font-size: 12px;
-    line-height: 22px;
-  }
   .editor-preview .code-scroller {
     max-height: 290px;
     scrollbar-color: auto;
@@ -908,7 +720,6 @@ footer nav {
   }
   .editor-tabs {
     padding-right: 12px;
-    font-size: 12px;
     background: var(--soft);
     border-bottom: 1px solid var(--border);
   }
@@ -938,13 +749,6 @@ footer nav {
   .workbench-pr > div {
     flex-basis: calc(100% - 66px);
   }
-  .workbench-pr-title {
-    font-size: 13px;
-    font-weight: 400;
-  }
-  .workbench-pr-meta {
-    font-size: 12px;
-  }
   .feed-heading {
     margin-top: 26px;
   }
@@ -958,15 +762,6 @@ footer nav {
   .feed-top > .avatar {
     width: 27px;
     height: 27px;
-  }
-  .feed-time {
-    font-size: 12px;
-  }
-  .feed-title {
-    font-size: 13px;
-  }
-  .feed-box p {
-    font-size: 13px;
   }
   .feed-box .repo-meta a {
     min-height: 36px;
@@ -1007,13 +802,11 @@ footer nav {
     background: var(--surface);
   }
   .global-nav a {
-    font-size: 12px;
     min-height: 44px;
     padding: 8px 10px;
   }
   .playback button {
     min-height: 44px;
-    font-size: 12px;
   }
   .playback #sync {
     min-width: 44px;
@@ -1024,15 +817,10 @@ footer nav {
   }
   .workbench-head .btn {
     min-height: 44px;
-    font-size: 12px;
     padding: 6px 10px;
   }
   .workbench-description {
     max-width: 25ch;
-    font-size: 12px;
-  }
-  .workbench-head .repo-name {
-    font-size: 13px;
   }
   .overview-aside {
     display: block;
@@ -1040,20 +828,6 @@ footer nav {
   .team-panel,
   .cycle-panel {
     margin-bottom: 24px;
-  }
-  .team-member strong {
-    font-size: 13px;
-  }
-  .team-member div > span {
-    font-size: 12px;
-  }
-  .overview-aside .section-top h2 {
-    font-size: 14px;
-  }
-  .observer-note p,
-  .observer-note h2,
-  .observer-note a {
-    font-size: 12px;
   }
   footer {
     margin-left: 16px;
@@ -1066,22 +840,6 @@ html {
   scrollbar-gutter: stable;
   scroll-behavior: auto;
 }
-body,
-button,
-input,
-select,
-textarea {
-  font-family: "Arimo", Arial, Helvetica, sans-serif;
-}
-h1,
-h2,
-h3 {
-  letter-spacing: 0;
-}
-strong,
-b {
-  font-weight: 600;
-}
 .global-nav a {
   gap: 8px;
 }
@@ -1092,13 +850,6 @@ b {
 }
 .workbench-head .avatar {
   display: none;
-}
-.workbench-head .repo-name {
-  font-weight: 600;
-}
-.workbench-description {
-  font-size: 13px;
-  line-height: 1.6;
 }
 .pill {
   border-radius: 4px;
@@ -1127,12 +878,4 @@ b {
 }
 dialog {
   border-radius: 4px;
-}
-@media (max-width: 760px) {
-  .workbench-description {
-    font-size: 12px;
-  }
-  .workbench-head .repo-name {
-    font-size: 14px;
-  }
 }

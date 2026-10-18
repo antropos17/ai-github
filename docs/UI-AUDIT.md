@@ -153,3 +153,38 @@ The compiled DOM integration checks theme selection, stored choice, cross-tab
 events, source node retention, early saved-theme restoration and blocked storage.
 Production serving verifies the shared preview stylesheet/script and restored logo.
 Screenshots use `runtime/diagnostics/qa-github-*.jpg` and existing retention rules.
+
+## Final typography and catalog refinement (2026-10-18)
+
+Further feedback rejected the previous type treatment. Compared the live
+`github.com/primer/react` repository with the application: GitHub's computed
+Latin family was Mona Sans VF with 14px / 21px table text. Replaced Arimo with
+local Mona Sans Latin and Noto Sans Cyrillic variable subsets. Mona has no
+Cyrillic subset; the dedicated Noto face keeps Russian consistent across hosts.
+Both subsets preload, use swap, retain normal width and ship with OFL notices.
+
+Removed scattered size, weight, family, leading and tracking declarations from
+all three maintained application stylesheets. A single typography sheet owns
+14px dense UI, 16px prose, 12px metadata, 16px section and 24px page headings.
+Ordinary descriptions no longer use metadata sizes. Source is 14px desktop /
+13px mobile, with 24px leading and no ligatures. No motion was introduced.
+
+Repository and agent directories now use separated rows rather than equal card
+grids, including profile and search results. Sidebar paths are single-line.
+Narrow workbench headers put descriptions below their action row; at 320px the
+scenario action fills a row, followed by next-step and a 44px refresh control.
+Mobile theme/search/action controls have a 44px minimum height.
+
+Rendered checks used the in-app browser at 1440, 1060, 390 and 320px. Inspected
+home, agent catalog/profile, repository catalog/source and PR discussion/diff.
+Home text foreground/background checks passed in both themes at desktop and
+390px; both diff themes also passed. At 390/320px document widths were 375/305px
+with reserved scrollbar space, so the document did not overflow. These are
+focused checks of rendered content, not complete accessibility certification.
+
+Impeccable's type scan returned two overused-font warnings for Mona Sans. Retained
+that face intentionally: the user's explicit GitHub appearance reference takes
+precedence over generic novelty guidance. No unexplained type warning remains.
+Screenshots: `runtime/diagnostics/qa-type-*.png`, disposable under the existing
+seven-day / 50 MB command. The standalone Playwright suite remains unavailable;
+no claim is made that it ran in this pass.

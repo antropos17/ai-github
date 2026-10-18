@@ -121,9 +121,6 @@ header {
   background: var(--surface);
   border-color: var(--border);
 }
-#search-form input {
-  font-size: 14px;
-}
 #theme-select {
   background: var(--surface);
   color: var(--text);
@@ -132,11 +129,9 @@ header {
   min-height: 34px;
   padding: 5px 28px 5px 10px;
   max-width: 130px;
-  font-size: 13px;
   cursor: pointer;
 }
 .global-nav a {
-  font-size: 14px;
   color: var(--text);
 }
 .global-nav a[aria-current] {
@@ -145,22 +140,15 @@ header {
 .global-nav a:hover {
   background: var(--hover);
 }
-.directory-link {
-  font-size: 13px;
-}
 .btn,
 .playback button {
   border-radius: 6px;
-  font-size: 13px;
 }
 .project-workbench {
   border-radius: 6px;
 }
 .workbench-head {
   padding: 16px;
-}
-.workbench-description {
-  font-size: 13px;
 }
 .workbench-pr {
   border-top: 1px solid var(--border);
@@ -170,13 +158,6 @@ header {
 .code-panel {
   background: var(--surface);
   color: var(--text);
-}
-.code-lines,
-.editor-preview .code-lines {
-  font-family:
-    ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-  font-size: 13px;
-  line-height: 24px;
 }
 .kw,
 .editor-preview .kw {
@@ -321,29 +302,9 @@ dialog {
     width: 100%;
     max-width: none;
   }
-  #search-form input {
-    font-size: 16px;
-  }
-  .global-nav a {
-    font-size: 13px;
-  }
-  .code-lines,
-  .editor-preview .code-lines {
-    font-size: 12px;
-  }
-  .workbench-description {
-    font-size: 12px;
-  }
-  .playback button,
-  .btn {
-    font-size: 12px;
-  }
 }
 @media (max-width: 480px) {
   #theme-select {
     min-height: 44px;
-  }
-  .global-nav a {
-    font-size: 12px;
   }
 }

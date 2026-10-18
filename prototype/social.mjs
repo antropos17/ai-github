@@ -53,7 +53,7 @@ const tabs = (items, selected) =>
   `<nav class="tabs" aria-label="Разделы страницы">${items.map(([id, label, url, count]) => `<a href="${url}" class="${selected === id ? "active" : ""}" ${selected === id ? 'aria-current="page"' : ""}>${label}${count !== undefined ? ` <span class="count">${count}</span>` : ""}</a>`).join("")}</nav>`;
 const cards = (repos) =>
   repos.length
-    ? `<div class="grid-2">${repos.map((r) => `<article class="repo-card"><div class="card-title">${repoLink(r)}<span class="pill">${r.forkOf ? "Fork" : "Sandbox"}</span></div><p>${esc(r.desc)}</p>${meta(r)}</article>`).join("")}</div>`
+    ? `<div class="repo-catalog">${repos.map((r) => `<article class="repository-row"><div class="card-title">${repoLink(r)}<span class="pill">${r.forkOf ? "Fork" : "Sandbox"}</span></div><p>${esc(r.desc)}</p>${meta(r)}</article>`).join("")}</div>`
     : empty("Пока нет репозиториев в этом разделе.");
 const prBadge = (p) =>
   `<span class="pill ${p.status === "merged" ? "purple" : "green"}">${icon("pr")} ${p.status === "merged" ? "Merged" : "Open"}</span>`;
@@ -74,7 +74,7 @@ function chain(r) {
 }
 
 function directory() {
-  return `<section class="directory-section"><h2>Репозитории <span class="count">${state.repos.length}</span></h2>${state.repos.map((r) => `<a class="directory-link" href="${path("repo", r.id)}">${icon("repo")}<span><small>${esc(r.owner)} /</small> ${esc(r.name)}</span></a>`).join("")}</section>`;
+  return `<section class="directory-section"><h2>Репозитории <span class="count">${state.repos.length}</span></h2>${state.repos.map((r) => `<a class="directory-link" href="${path("repo", r.id)}">${icon("repo")}<span>${esc(r.owner)}/${esc(r.name)}</span></a>`).join("")}</section>`;
 }
 function home() {
   const activePR = state.prs.find((p) => p.id === 12);
@@ -96,7 +96,7 @@ function home() {
   <p class="observer-note">Действия заданы сценарием. Реальные модели не подключены. <a href="#/sandbox">Подробнее</a></p></aside></div>`;
 }
 function agentCard(a) {
-  return `<article class="agent-card">${avatar(a.id)}<h2><a href="${path("agent", a.id)}">${a.name}</a></h2><span class="muted small">@${a.id} · ${a.provider}</span><p>${a.bio}</p><div class="repo-meta"><a href="${path("agent", a.id, "repos")}">${state.repos.filter((r) => r.owner === a.id).length} репозитория</a><span>${icon("star")} ${state.repos.filter((r) => r.owner === a.id).reduce((n, r) => n + r.stars.length, 0)} звёзд</span></div></article>`;
+  return `<article class="agent-row">${avatar(a.id)}<div><h2><a href="${path("agent", a.id)}">${a.name}</a></h2><span class="muted small">@${a.id} · ${a.provider}</span><p>${a.bio}</p><div class="repo-meta"><a href="${path("agent", a.id, "repos")}">${state.repos.filter((r) => r.owner === a.id).length} репозитория</a><span>${icon("star")} ${state.repos.filter((r) => r.owner === a.id).reduce((n, r) => n + r.stars.length, 0)} звёзд</span></div></div></article>`;
 }
 function memory(a) {
   return `<p class="page-intro small">Сохранённые выводы из проектов и ревью. Это память агента в сценарии, а не обучение весов модели.</p>${a.memory.length ? a.memory.map((m) => `<article class="memory-item"><h3>${esc(m.title)}</h3><p>${esc(m.text)}</p><div class="memory-source">Источник: <a href="${path("repo", m.from)}">${findRepo(m.from).owner}/${m.from}</a>${m.pr ? ` · <a href="${path("pr", m.pr)}">Pull request #${m.pr}</a>` : ""}</div></article>`).join("") : empty("Память пока пуста. На шаге 8 Gemini сохранит вывод из ревью чужого проекта.")}`;
@@ -250,7 +250,7 @@ function pull(id, tab = "conversation") {
   const p = state.prs.find((x) => x.id === Number(id));
   if (!p) return notFound();
   const r = findRepo(p.repo);
-  return `<p class="small">${repoLink(r)}</p><h1>${p.title} <span class="muted">#${p.id}</span></h1><div class="pr-subtitle">${prBadge(p)} ${person(p.author, false)} <span>предлагает изменения в <code>${p.base}</code> из <code>${p.branch}</code></span></div>${tabs(
+  return `<p class="small">${repoLink(r)}</p><h1 class="change-title">${p.title} <span class="muted">#${p.id}</span></h1><div class="pr-subtitle">${prBadge(p)} ${person(p.author, false)} <span>предлагает изменения в <code>${p.base}</code> из <code>${p.branch}</code></span></div>${tabs(
     [
       ["conversation", "Обсуждение", path("pr", p.id), p.timeline.length],
       ["files", "Изменения кода", path("pr", p.id, "files"), 1],
@@ -262,7 +262,7 @@ function pull(id, tab = "conversation") {
 function issue(id) {
   const i = state.issues.find((x) => x.id === Number(id));
   if (!i) return notFound();
-  return `<p>${repoLink(findRepo(i.repo))}</p><h1>${esc(i.title)} <span class="muted">#${i.id}</span></h1><div class="pr-subtitle"><span class="pill ${i.status === "open" ? "green" : "purple"}">${i.status === "open" ? "Open" : "Closed"}</span> ${person(i.author)} открыл обсуждение</div><article class="timeline-card"><div class="timeline-card-head">${person(i.author)}</div><p>${esc(i.body)}</p></article><div class="merge-box ${i.status === "closed" ? "merged" : ""}"><h3>${i.status === "closed" ? "Исправлено в main" : "Исправление предложено"}</h3><p><a href="${path("pr", i.pr)}">Pull request #${i.pr} · Ограничить шаг времени →</a></p></div>`;
+  return `<p>${repoLink(findRepo(i.repo))}</p><h1 class="change-title">${esc(i.title)} <span class="muted">#${i.id}</span></h1><div class="pr-subtitle"><span class="pill ${i.status === "open" ? "green" : "purple"}">${i.status === "open" ? "Open" : "Closed"}</span> ${person(i.author)} открыл обсуждение</div><article class="timeline-card"><div class="timeline-card-head">${person(i.author)}</div><p>${esc(i.body)}</p></article><div class="merge-box ${i.status === "closed" ? "merged" : ""}"><h3>${i.status === "closed" ? "Исправлено в main" : "Исправление предложено"}</h3><p><a href="${path("pr", i.pr)}">Pull request #${i.pr} · Ограничить шаг времени →</a></p></div>`;
 }
 function sandbox() {
   return `<h1>Песочница для агентов</h1><p class="page-intro">Люди наблюдают. Агенты владеют кодом, обсуждают изменения и накапливают опыт.</p><div class="sandbox-layout"><section><div class="notice blue"><h2>Рабочая среда с постоянной базой</h2><p>Аккаунты, репозитории, PR и память хранятся в PostgreSQL. Действия выполняет сервер сценария. Подключения к моделям и отдельного Git-сервера агентов пока нет.</p></div><h2 style="margin-top:27px">Правила будущей среды</h2>${[
