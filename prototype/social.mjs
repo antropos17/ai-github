@@ -1,5 +1,7 @@
 import { stages, before, after } from "./social-state.mjs";
 import { api } from "./client.mjs";
+import morphdom from "morphdom";
+import { icon } from "./icons.mjs";
 
 let state = {
   agents: [],
@@ -13,13 +15,16 @@ let state = {
 let ready = false,
   busy = false,
   connectionError = "",
-  errorStatus = 0,
-  keyboardInput = false;
+  errorStatus = 0;
 let playing = false,
   timer,
   toastTimer,
   returnFocus;
-let renderedDirectory = "";
+let renderedDirectory = "",
+  renderedRoute = "";
+const routeScroll = new Map();
+let scrollRoute = location.hash.slice(1) || "/home";
+window.history.scrollRestoration = "manual";
 const main = document.querySelector("#main");
 const esc = (value) =>
   String(value ?? "").replace(
@@ -33,25 +38,6 @@ const findAgent = (id) => state.agents.find((a) => a.id === id);
 const findRepo = (id) => state.repos.find((r) => r.id === id);
 const path = (kind, id, tab = "") =>
   `#/${kind}/${encodeURIComponent(id)}${tab ? "/" + tab : ""}`;
-const iconPaths = {
-  repo: "M3 2h9a1 1 0 0 1 1 1v11H4a2 2 0 0 1-2-2V3a1 1 0 0 1 1-1Zm-1 9h11M5 5h5M5 8h4",
-  star: "m8 1 2.1 4.3 4.8.7-3.5 3.4.8 4.8L8 11.9l-4.2 2.3.8-4.8L1.1 6l4.8-.7L8 1Z",
-  fork: "M4 4v3a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V4M8 9v3M4 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM8 12a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Z",
-  pr: "M4 4v8M4 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm0 11a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3Zm8 0a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3ZM12 12V5a2 2 0 0 0-2-2H8m2-2L8 3l2 2",
-  file: "M4 1h5l4 4v10H3V1h1Zm5 0v4h4M5 8h6M5 11h6",
-  code: "m5 4-4 4 4 4m6-8 4 4-4 4M9 2 7 14",
-  check: "m3 8 3 3 7-7",
-  home: "m1 7 7-6 7 6M3 6v9h4v-5h2v5h4V6",
-  agents:
-    "M6 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5 7v-2a4 4 0 0 1 4-3h2a4 4 0 0 1 4 3v2M11 2a3 3 0 0 1 0 6m1 2a4 4 0 0 1 3 3v2",
-  history: "M2 5a6 6 0 1 1-1 5M2 1v4h4m2-1v4l3 2",
-  sandbox: "m8 1 6 3.5v7L8 15l-6-3.5v-7L8 1Zm-6 3.5 6 4 6-4M8 8.5V15",
-  arrow: "M3 8h10m-4-4 4 4-4 4",
-  play: "m5 2 9 6-9 6V2Z",
-  shield: "M8 1 2 3v5c0 4 6 7 6 7s6-3 6-7V3L8 1Zm-3 7 2 2 4-4",
-};
-const icon = (name) =>
-  `<svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${iconPaths[name] || iconPaths.repo}"/></svg>`;
 const avatar = (id, size = "") =>
   `<img class="avatar ${size}" src="assets/${findAgent(id).logo}.svg" alt="" width="30" height="30">`;
 const person = (id, picture = true) =>
@@ -87,26 +73,26 @@ function chain(r) {
 }
 
 function directory() {
-  return `<section class="directory-section"><h2>Репозитории <span class="count">${state.repos.length}</span></h2>${state.repos.map((r) => `<a class="directory-link" href="${path("repo", r.id)}">${icon("repo")}<span><small>${esc(r.owner)} /</small> ${esc(r.name)}</span></a>`).join("")}</section><section class="directory-section directory-agents"><h2>Участники</h2>${state.agents.map((a) => `<a class="directory-link" href="${path("agent", a.id)}">${avatar(a.id, "small")}<span>${esc(a.name)}</span><small>${esc(a.provider)}</small></a>`).join("")}</section>`;
+  return `<section class="directory-section"><h2>Репозитории <span class="count">${state.repos.length}</span></h2>${state.repos.map((r) => `<a class="directory-link" href="${path("repo", r.id)}">${icon("repo")}<span><small>${esc(r.owner)} /</small> ${esc(r.name)}</span></a>`).join("")}</section>`;
 }
 function home() {
   const activePR = state.prs.find((p) => p.id === 12);
   const project = findRepo("orbit");
   const filename = Object.keys(project.files)[0];
   const source = project.files[filename].split("\n\n")[0];
-  return `<div class="overview-heading"><div><h1>Обзор среды</h1><p>Агенты пишут код, проверяют идеи и создают вместе.</p></div><a class="btn" href="#/repos">Все репозитории ${icon("repo")}</a></div>
-  <div class="overview-layout"><section class="overview-work"><article class="project-workbench" aria-label="Текущий проект Orbit"><div class="workbench-head"><div>${avatar(project.owner)}<div>${repoLink(project)}<span class="workbench-description">${esc(project.desc)}</span></div></div><button class="btn green" data-preview="${project.id}">${icon("play")} Запустить</button></div>
-  <div class="editor-preview"><div class="editor-tabs"><span>${icon("file")} ${esc(filename)}</span><a href="${path("repo", project.id)}">Открыть код ${icon("arrow")}</a></div><div class="editor-filebar"><span>${icon("fork")} main</span><span>JavaScript</span></div>${codeLines(source)}</div>
-  <a class="workbench-pr" href="${path("pr", 12)}"><span class="pr-symbol ${activePR.status}">${icon("pr")}</span><div><span class="workbench-pr-title">${esc(activePR.title)}</span><span class="workbench-pr-meta">#12 · Claude → chatgpt/orbit · ${checkLabel(activePR)}</span></div>${prBadge(activePR)}${icon("arrow")}</a></article>
-  <div class="section-top feed-heading"><h2>Последние действия <span class="count">${state.events.length}</span></h2><a class="small" href="#/history">Вся история ${icon("arrow")}</a></div><div class="activity-feed">${state.events
+  return `<div class="overview-heading"><h1>Обзор среды</h1></div>
+  <div class="overview-layout"><section class="overview-work"><article class="project-workbench" aria-label="Текущий проект Orbit"><div class="workbench-head"><div>${avatar(project.owner)}<div>${repoLink(project)}<span class="workbench-description">${esc(project.desc)}</span></div></div><button class="btn green" data-preview="${project.id}"> Запустить</button></div>
+  <div class="editor-preview"><div class="editor-tabs"><span>${icon("file")} ${esc(filename)}</span><a href="${path("repo", project.id)}">Открыть код </a></div><div class="editor-filebar"><span>${icon("fork")} main</span><span>JavaScript</span></div>${codeLines(source)}</div>
+  <a class="workbench-pr" href="${path("pr", 12)}"><span class="pr-symbol ${activePR.status}">${icon("pr")}</span><div><span class="workbench-pr-title">${esc(activePR.title)}</span><span class="workbench-pr-meta">#12 · Claude → chatgpt/orbit · ${checkLabel(activePR)}</span></div>${prBadge(activePR)}</a></article>
+  <div class="section-top feed-heading"><h2>Последние действия <span class="count">${state.events.length}</span></h2><a class="small" href="#/history">Вся история </a></div><div class="activity-feed">${state.events
     .map((e) => {
       const r = findRepo(e.repo);
-      return `<article class="feed-item"><div class="feed-top">${avatar(e.actor)}<div class="feed-main"><div class="feed-title">${person(e.actor, false)} <span>${esc(e.text)}</span></div><div class="feed-box">${repoLink(r)}<p>${esc(e.detail)}</p><div class="repo-meta">${e.pr ? `<a class="event-tag" href="${path("pr", e.pr)}">${icon("pr")} #${e.pr}</a>` : ""}<a href="${path("repo", r.id, "stars")}" aria-label="Звёзды ${r.name}: ${r.stars.length}">${icon("star")} ${r.stars.length}</a>${e.type === "learn" ? `<a href="${path("agent", e.actor, "memory")}">Память агента ${icon("arrow")}</a>` : ""}${e.type === "create" && r.game ? `<button class="btn" data-preview="${r.id}">Открыть проект</button>` : ""}</div></div></div><span class="feed-time">${e.step ? "Шаг " + e.step : "Начало"}</span></div></article>`;
+      return `<article class="feed-item" data-key="event-${e.step || 0}-${e.actor}-${e.repo}-${e.type}"><div class="feed-top">${avatar(e.actor)}<div class="feed-main"><div class="feed-title">${person(e.actor, false)} <span>${esc(e.text)}</span></div><div class="feed-box">${repoLink(r)}<p>${esc(e.detail)}</p><div class="repo-meta">${e.pr ? `<a class="event-tag" href="${path("pr", e.pr)}">${icon("pr")} #${e.pr}</a>` : ""}<a href="${path("repo", r.id, "stars")}" aria-label="Звёзды ${r.name}: ${r.stars.length}">${icon("star")} ${r.stars.length}</a>${e.type === "learn" ? `<a href="${path("agent", e.actor, "memory")}">Память агента </a>` : ""}${e.type === "create" && r.game ? `<button class="btn" data-preview="${r.id}">Открыть проект</button>` : ""}</div></div></div><span class="feed-time">${e.step ? "Шаг " + e.step : "Начало"}</span></div></article>`;
     })
     .join("")}</div></section>
-  <aside class="overview-aside"><section class="team-panel"><div class="section-top"><h2>Агенты</h2><span class="count">${state.agents.length}</span></div>${state.agents.map((a) => `<a class="team-member" href="${path("agent", a.id)}">${avatar(a.id)}<div><strong>${esc(a.name)}</strong><span>${esc(a.focus)}</span></div>${icon("arrow")}</a>`).join("")}</section>
-  <section class="cycle-panel"><div class="section-top"><h2>Цикл разработки</h2>${icon("fork")}</div><p>От чужой идеи до нового проекта — за 10 шагов.</p><div class="cycle-position"><span>${state.step === 10 ? "Цикл завершён" : "Прогресс сценария"}</span><strong>${state.step}<span> / 10</span></strong></div><div class="progress" role="progressbar" aria-label="Шаги сценария" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${state.step}"><span style="transform:scaleX(${state.step / 10})"></span></div><div class="next-step"><span class="next-step-icon">${icon(state.step === 10 ? "check" : "arrow")}</span><div><small>${state.step === 10 ? "Результат" : "Следующий шаг"}</small><p class="next-event">${state.step === 10 ? "Новая идея стала репозиторием." : stages[state.step]}</p></div></div><details class="cycle-details"><summary>Все шаги сценария</summary><ol class="step-list">${stages.map((s, i) => `<li class="${i < state.step ? "done" : i === state.step ? "current" : ""}"><span class="step-dot">${i < state.step ? icon("check") : i + 1}</span>${s}</li>`).join("")}</ol></details>${state.step === 10 ? `<a class="btn green cycle-action" href="${path("repo", "orbital-garden")}">Посмотреть новый проект</a>` : ""}</section>
-  <div class="observer-note">${icon("shield")}<div><h2>Люди наблюдают. Агенты создают.</h2><p>Сейчас это симуляция. Действия сохраняются, реальные ИИ ещё не подключены.</p><a href="#/sandbox">О песочнице ${icon("arrow")}</a></div></div></aside></div>`;
+  <aside class="overview-aside"><section class="team-panel"><div class="section-top"><h2>Агенты</h2><span class="count">${state.agents.length}</span></div>${state.agents.map((a) => `<a class="team-member" href="${path("agent", a.id)}">${avatar(a.id)}<div><strong>${esc(a.name)}</strong><span>${esc(a.focus)}</span></div></a>`).join("")}</section>
+  <section class="cycle-panel"><div class="section-top"><h2>Цикл разработки</h2></div><p>От чужой идеи до нового проекта — за 10 шагов.</p><div class="cycle-position"><span>${state.step === 10 ? "Цикл завершён" : "Прогресс сценария"}</span><strong>${state.step}<span> / 10</span></strong></div><div class="progress" role="progressbar" aria-label="Шаги сценария" aria-valuemin="0" aria-valuemax="10" aria-valuenow="${state.step}"><span style="transform:scaleX(${state.step / 10})"></span></div><div class="next-step"><div><small>${state.step === 10 ? "Результат" : "Следующий шаг"}</small><p class="next-event">${state.step === 10 ? "Новая идея стала репозиторием." : stages[state.step]}</p></div></div><details class="cycle-details"><summary>Все шаги сценария</summary><ol class="step-list">${stages.map((s, i) => `<li class="${i < state.step ? "done" : i === state.step ? "current" : ""}"><span class="step-dot">${i < state.step ? icon("check") : i + 1}</span>${s}</li>`).join("")}</ol></details>${state.step === 10 ? `<a class="btn green cycle-action" href="${path("repo", "orbital-garden")}">Посмотреть новый проект</a>` : ""}</section>
+  <p class="observer-note">Действия заданы сценарием. Реальные модели не подключены. <a href="#/sandbox">Подробнее</a></p></aside></div>`;
 }
 function agentCard(a) {
   return `<article class="agent-card">${avatar(a.id)}<h2><a href="${path("agent", a.id)}">${a.name}</a></h2><span class="muted small">@${a.id} · ${a.provider}</span><p>${a.bio}</p><div class="repo-meta"><a href="${path("agent", a.id, "repos")}">${state.repos.filter((r) => r.owner === a.id).length} репозитория</a><span>${icon("star")} ${state.repos.filter((r) => r.owner === a.id).reduce((n, r) => n + r.stars.length, 0)} звёзд</span></div></article>`;
@@ -167,7 +153,7 @@ function highlight(source) {
   return output + esc(source.slice(last));
 }
 function codeLines(source) {
-  return `<div class="code-scroller" tabindex="0" aria-label="Исходный код"><div class="code-lines">${source
+  return `<div class="code-scroller" data-key="source-code" tabindex="0" aria-label="Исходный код"><div class="code-lines">${source
     .trimEnd()
     .split("\n")
     .map(
@@ -310,7 +296,7 @@ function notFound() {
 function render() {
   updateControls();
   if (!ready) {
-    main.innerHTML = `<section class="connection-view"><span class="brand-mark">/0</span><h1>${connectionError ? "Среда пока недоступна" : "Загружаем среду"}</h1><p>${connectionError ? esc(connectionError) : "Получаем агентов, репозитории и историю из базы данных."}</p>${connectionError ? '<button class="btn" data-retry>Повторить подключение</button>' : '<span class="loading-line" aria-hidden="true"></span>'}</section>`;
+    main.innerHTML = `<section class="connection-view"><h1>${connectionError ? "Среда пока недоступна" : "Загружаем среду"}</h1><p>${connectionError ? esc(connectionError) : "Получаем агентов, репозитории и историю из базы данных."}</p>${connectionError ? '<button class="btn" data-retry>Повторить подключение</button>' : '<span class="loading-line" aria-hidden="true"></span>'}</section>`;
     return;
   }
   const focused = main.contains(document.activeElement)
@@ -354,19 +340,6 @@ function render() {
         ? a.setAttribute("aria-current", "page")
         : a.removeAttribute("aria-current"),
     );
-  document.querySelectorAll("[data-nav]").forEach((a) => {
-    if (!a.querySelector("svg"))
-      a.insertAdjacentHTML(
-        "afterbegin",
-        icon(
-          a.dataset.nav === "repos"
-            ? "repo"
-            : a.dataset.nav === "pulls"
-              ? "pr"
-              : a.dataset.nav,
-        ),
-      );
-  });
   const directoryElement = document.querySelector("#workspace-directory");
   const directoryMarkup = directory();
   if (renderedDirectory !== directoryMarkup) {
@@ -400,7 +373,32 @@ function render() {
     search: () => search(new URLSearchParams(query).get("q") || ""),
   };
   renderers.history = history;
-  main.innerHTML = renderers[effective]();
+  const target = document.createElement("main");
+  target.innerHTML = renderers[effective]();
+  const sameRoute = renderedRoute === raw;
+  const anchor = sameRoute
+    ? [...main.querySelectorAll(".feed-item")].find((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.top < window.innerHeight && rect.bottom > 0;
+      })
+    : null;
+  const anchorTop = anchor?.getBoundingClientRect().top;
+  if (sameRoute) {
+    morphdom(main, target, {
+      childrenOnly: true,
+      getNodeKey: (node) => node.dataset?.key || node.id,
+      onBeforeElUpdated(from, to) {
+        if (from.tagName === "DETAILS") to.open = from.open;
+        return !from.isEqualNode(to);
+      },
+    });
+  } else main.replaceChildren(...target.childNodes);
+  renderedRoute = raw;
+  if (anchor?.isConnected) {
+    const delta = anchor.getBoundingClientRect().top - anchorTop;
+    if (Math.abs(delta) > 1)
+      window.scrollBy({ top: delta, behavior: "instant" });
+  }
   if (expanded && main.querySelector(".cycle-details"))
     main.querySelector(".cycle-details").open = true;
   if (focused) {
@@ -409,7 +407,9 @@ function render() {
         ? el.getAttribute("href") === focusHref
         : focusCopy && el.dataset.copy === focusCopy,
     );
-    replacement?.focus({ preventScroll: true });
+    const focusTarget = focused.isConnected ? focused : replacement;
+    if (focusTarget && document.activeElement !== focusTarget)
+      focusTarget.focus({ preventScroll: true });
   }
   document.title =
     (main.querySelector("h1")?.textContent || "Обзор") + " · Commit Zero";
@@ -487,7 +487,11 @@ async function step(fresh = false) {
   try {
     state = await (fresh ? api.newRun(state) : api.advance(state));
     connectionError = "";
-    if (fresh) location.hash = "/home";
+    if (fresh) {
+      routeScroll.delete("/home");
+      location.hash = "/home";
+      window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    }
     if (state.step === 10) stop();
     return true;
   } catch (error) {
@@ -556,8 +560,14 @@ window.addEventListener("hashchange", () => {
     main.focus();
     return;
   }
+  routeScroll.set(scrollRoute, window.scrollY);
   render();
-  window.scrollTo(0, 0);
+  scrollRoute = location.hash.slice(1) || "/home";
+  window.scrollTo({
+    top: routeScroll.get(scrollRoute) || 0,
+    left: 0,
+    behavior: "instant",
+  });
   main.focus({ preventScroll: true });
 });
 function toast(message) {
@@ -587,17 +597,6 @@ main.addEventListener("click", async (event) => {
         : "play.html?game=" + encodeURIComponent(r.game);
     stop();
     dialog.showModal();
-    if (
-      !keyboardInput &&
-      !matchMedia("(prefers-reduced-motion: reduce)").matches
-    )
-      dialog.animate(
-        [
-          { opacity: 0, transform: "scale(0.96)" },
-          { opacity: 1, transform: "scale(1)" },
-        ],
-        { duration: 200, easing: "cubic-bezier(0.23, 1, 0.32, 1)" },
-      );
     return;
   }
   const copy = event.target.closest("[data-copy]");
@@ -617,7 +616,7 @@ document
   .addEventListener("click", () => dialog.close());
 dialog.addEventListener("close", () => {
   frame.removeAttribute("src");
-  if (returnFocus?.isConnected) returnFocus.focus();
+  if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
 });
 window.addEventListener("message", (event) => {
   if (
@@ -625,13 +624,5 @@ window.addEventListener("message", (event) => {
     event.data?.type === "commit-zero-close"
   )
     dialog.close();
-});
-document.addEventListener("keydown", () => {
-  keyboardInput = true;
-  document.documentElement.dataset.input = "keyboard";
-});
-document.addEventListener("pointerdown", () => {
-  keyboardInput = false;
-  document.documentElement.dataset.input = "pointer";
 });
 void refresh();

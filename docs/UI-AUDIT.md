@@ -100,3 +100,28 @@ covered by the existing seven-day / 50 MB retention command. The Playwright suit
 was attempted but could not launch because its Chromium executable is absent.
 No browser was downloaded. Manual in-app browser checks and the passing compiled
 DOM tests are reported separately from that unavailable automated suite.
+
+## Typography and motion correction after further feedback
+
+The subsequent feedback rejected the heavy platform font, custom brand symbol,
+decorative icons and perceived teleporting. The interface now uses bundled Arimo
+400/600 with Latin and Cyrillic subsets, a plain wordmark, text-only navigation,
+upstream GitHub Octicons for file/PR/actions and a white source editor. Removed
+repeated participant lists, arrow decorations, icon tiles and slogans. Provider
+marks still identify the existing simulated accounts.
+
+Removed the dialog's WAAPI scale/fade and all workspace CSS transitions. Keyed
+morphdom updates replace full page recreation during refresh/advance. Returning
+to a route restores its document scroll, updates retain code scroll and selection,
+and new runs start at the top. A visible feed item anchors the reading position
+when new events arrive. Stable scrollbar space and control widths reduce shifts.
+
+The compiled DOM regression now checks source and event node identity across
+refresh/advance, selected text, horizontal code scroll, expanded details, focus,
+route return scroll and fresh-run reset. The complete check command passes.
+In-app browser checks at 1440 and 390px confirmed the new font and layout. The
+390px view had no document overflow; computed styles reported no CSS animation
+or nonzero transition. A refresh retained code scroll at 37.33px. Preview opened
+with transform/animation `none`; Escape returned focus to its launch button.
+The source detector returned no findings and dependency audit found no reported
+vulnerabilities. This does not expand the unavailable Playwright suite into a pass.

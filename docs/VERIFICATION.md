@@ -39,3 +39,16 @@ were checked manually. See UI-AUDIT.md for scope and local screenshot locations.
 `npm run test:ui` was attempted and stopped before executing the test because
 `chromium_headless_shell-1248` is not installed. It is not reported as a passing
 browser suite. No database migration or scenario change was made in this pass.
+
+## Typography and stable-update correction
+
+`npm run check` passes with additional compiled DOM regression assertions for
+stable event/source nodes, text selection, code scroll, details, focus, route
+scroll restoration and fresh-run scroll reset. The bundled UI is about 46.6 kB
+JavaScript / 16.6 kB gzip, plus approximately 38 kB of local WOFF2 fonts.
+
+In-app browser: 1440/390px render inspection, loaded Arimo, no mobile document
+overflow, no computed CSS motion, code scroll retained through refresh, immediate
+preview and Escape/focus restoration. Impeccable scan returned `[]`; dependency
+audit reported zero vulnerabilities. The standalone Playwright executable is
+still absent; no new claim of a passing full browser suite is made.

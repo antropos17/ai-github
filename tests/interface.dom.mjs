@@ -52,15 +52,55 @@ test("Compiled interface loads, saves, recovers, navigates, and has accessible m
     addEventListener() {},
     removeEventListener() {},
   });
-  window.scrollTo = () => {};
+  let scrollPosition = 0;
+  Object.defineProperty(window, "scrollY", { get: () => scrollPosition });
+  window.scrollTo = (options, y) => {
+    scrollPosition = typeof options === "object" ? options.top : y;
+  };
+  window.scrollBy = ({ top }) => {
+    scrollPosition += top;
+  };
   window.eval(script);
   const doc = window.document;
   await until(() => doc.querySelector("h1")?.textContent === "Обзор среды");
   assert.match(doc.querySelector("#connection-label").textContent, /Сохранено/);
+  const codeScroller = doc.querySelector(".code-scroller");
+  const existingEvent = doc.querySelector(".feed-item");
+  const eventKey = existingEvent.dataset.key;
+  const eventLink = existingEvent.querySelector("a");
+  codeScroller.scrollLeft = 140;
+  doc.querySelector(".cycle-details").open = true;
+  eventLink.focus();
+  const selection = window.getSelection();
+  const range = doc.createRange();
+  range.selectNodeContents(doc.querySelector(".code-line code"));
+  selection.addRange(range);
+  const selectedText = selection.toString();
+  scrollPosition = 320;
+  doc.querySelector("#sync").click();
+  await until(
+    () => doc.querySelector("main").getAttribute("aria-busy") === "false",
+  );
+  assert.equal(doc.querySelector(".code-scroller"), codeScroller);
+  assert.equal(codeScroller.scrollLeft, 140);
+  assert.equal(selection.toString(), selectedText);
+  assert.equal(doc.activeElement, eventLink);
+  assert.equal(scrollPosition, 320);
   doc.querySelector("#playback-next").click();
   await until(
     () => doc.querySelector("#playback-status").textContent === "Шаг 1 / 10",
   );
+  assert.equal(doc.querySelector(`[data-key="${eventKey}"]`), existingEvent);
+  assert.equal(doc.querySelector(".code-scroller"), codeScroller);
+  assert.equal(codeScroller.scrollLeft, 140);
+  assert.equal(doc.querySelector(".cycle-details").open, true);
+  assert.equal(doc.activeElement, eventLink);
+  window.location.hash = "/agents";
+  await until(() => doc.querySelector("h1")?.textContent === "Агенты");
+  assert.equal(scrollPosition, 0);
+  window.location.hash = "/home";
+  await until(() => Boolean(doc.querySelector(".activity-feed")));
+  assert.equal(scrollPosition, 320);
   assert.equal(
     (
       await app.inject({ url: "/api/state", headers: { host: "localhost" } })
@@ -123,12 +163,14 @@ test("Compiled interface loads, saves, recovers, navigates, and has accessible m
   );
   window.location.hash = "/repo/orbital-garden";
   await until(() => Boolean(doc.querySelector(".code-lines")));
+  scrollPosition = 640;
   doc.querySelector("#playback-toggle").click();
   await until(
     () =>
       doc.querySelector("h1")?.textContent === "Обзор среды" &&
       doc.querySelector("#playback-status").textContent === "Готово к показу",
   );
+  assert.equal(scrollPosition, 0);
   const fresh = (
     await app.inject({ url: "/api/state", headers: { host: "localhost" } })
   ).json();
