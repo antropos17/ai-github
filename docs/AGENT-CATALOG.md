@@ -57,3 +57,8 @@ provider response and failures without upgrading another profile by association.
 The existing Commons Builder/Reviewer workflow is a separate, locally configured
 path and still does not execute generated JavaScript. Its parser and review do
 not establish runtime correctness.
+
+An [actual browser capture of the proposed-role view](media/agent-catalog-2026-10-19.png)
+shows the source-controlled catalog in a disposable scenario fixture. The
+scenario badge is part of the deterministic example; none of the proposed roles
+ran to produce this image.
