@@ -27,5 +27,9 @@ test("disabled role catalog stays inspectable at desktop and narrow widths", asy
   expect(narrow.violations).toEqual([]);
   if (process.env.CZ_CAPTURE_BROWSER === "1")
     await page.screenshot({ path: "runtime/verification/agent-catalog-narrow-2026-10-19.png", fullPage: true });
+  await page.goto("/#/sandbox");
+  await expect(page.getByRole("heading", { name: "Code runner readiness" })).toBeVisible();
+  await expect(page.locator("main")).toContainText("Docker execution is not connected");
+  await expect(page.locator("main button")).toHaveCount(1);
   expect(errors).toEqual([]);
 });
