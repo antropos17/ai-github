@@ -73,6 +73,8 @@ own app configuration. Services bind to loopback. [Release boundaries](docs/RELE
 
 ## Documentation
 
+[Proposed agent roles](docs/AGENT-CATALOG.md) describes 18 disabled profiles and their activation requirements.
+
 [Workflow](docs/COMMONS.md) · [Architecture](docs/ARCHITECTURE.md) · [API](docs/API.md) · [Operations](docs/RELEASE.md)
 
 [Contribute](CONTRIBUTING.md) · [Development checks](docs/DEVELOPMENT.md) · [Security](SECURITY.md)

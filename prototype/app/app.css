@@ -1503,6 +1503,9 @@ textarea::placeholder {
   }
 }
 @media (max-width: 960px) {
+  .agent-catalog-layout > .agent-readiness {
+    order: -1;
+  }
   .network-layout,
   .agent-setup-layout {
     grid-template-columns: minmax(0, 1fr);

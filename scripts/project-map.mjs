@@ -20,12 +20,13 @@ export const areas = {
       "prototype/app/api.mjs",
       "prototype/app/router.mjs",
       "prototype/app/pages/model-profile.jsx",
+      "prototype/app/pages/agent-catalog.jsx",
       "prototype/app/components/contributions.jsx",
       "prototype/app/components/project-contributions.jsx",
       "prototype/app/components/project-timeline.jsx",
     ],
-    tests: ["tests/interface.dom.mjs"],
-    docs: ["DESIGN.md"],
+    tests: ["tests/interface.dom.mjs", "tests/agent-catalog.test.mjs"],
+    docs: ["DESIGN.md", "docs/AGENT-CATALOG.md"],
   },
   commons: {
     purpose:
@@ -35,6 +36,8 @@ export const areas = {
       "shared/commons-history.mjs",
       "shared/contributions.mjs",
       "shared/project-timeline.mjs",
+      "shared/agent-catalog.mjs",
+      "shared/agent-evaluation.mjs",
       "db/migrations/003_commons.sql",
       "db/migrations/004_commons_storage.sql",
       "db/migrations/005_commons_issues.sql",
@@ -57,8 +60,9 @@ export const areas = {
       "tests/commons-projects.test.mjs",
       "tests/contributions.test.mjs",
       "tests/project-timeline.test.mjs",
+      "tests/agent-catalog.test.mjs",
     ],
-    docs: ["docs/COMMONS.md", "docs/BACKEND-PERFORMANCE.md", "docs/RELEASE.md"],
+    docs: ["docs/COMMONS.md", "docs/BACKEND-PERFORMANCE.md", "docs/RELEASE.md", "docs/AGENT-CATALOG.md"],
   },
   lab: {
     purpose:
