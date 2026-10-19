@@ -1,7 +1,4 @@
 /* Shared application shell and the overview's repository-first composition. */
-.mobile-navigation {
-  display: none;
-}
 :root {
   color: var(--text);
   background: var(--surface);
@@ -85,7 +82,7 @@ header {
   border-radius: 3px;
 }
 .directory-section {
-  margin-top: 30px;
+  margin-top: 32px;
   padding: 0 6px;
 }
 .directory-section h2 {
@@ -173,14 +170,12 @@ header {
 main {
   width: 100%;
   max-width: 1320px;
+  margin: 0 auto;
   padding: 32px 32px 48px;
   min-height: 65vh;
 }
 h1 {
   color: var(--text);
-}
-.page-intro {
-  margin-bottom: 28px;
 }
 .overview-heading {
   display: flex;
@@ -510,7 +505,7 @@ h1 {
 .next-event {
   margin: 0 !important;
 }
-.cycle-details summary {
+.cycle-details .section-title {
   padding: 8px 0;
 }
 .observer-note {
@@ -772,7 +767,7 @@ footer nav {
   .team-member {
     min-height: 60px;
   }
-  .cycle-details summary {
+  .cycle-details .section-title {
     min-height: 44px;
   }
   .observer-note a {
@@ -854,32 +849,7 @@ html {
 .tabs a:focus-visible {
   outline-offset: -3px;
 }
-@media (max-width: 760px) {
-  .app-sidebar .global-nav {
-    display: none;
-  }
-  .mobile-navigation {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    width: 100%;
-    padding: 8px 4px;
-  }
-  .mobile-navigation .btn {
-    flex-shrink: 0;
-  }
-  .mobile-navigation select {
-    flex: 1;
-    min-width: 0;
-    min-height: 44px;
-    padding: 8px 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    background: var(--surface);
-    color: var(--text);
-    cursor: pointer;
-  }
-}
+
 .global-nav a {
   gap: 8px;
 }

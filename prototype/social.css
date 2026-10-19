@@ -432,9 +432,12 @@ p {
   flex-wrap: wrap;
 }
 .filters input {
+  background: var(--surface);
+  color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 7px 10px;
+  padding: 8px 12px;
+  min-height: 36px;
   min-width: 150px;
   flex: 1;
 }
@@ -1285,14 +1288,9 @@ main {
   margin: 16px 0 18px !important;
   color: var(--text) !important;
 }
-.cycle-details summary {
-  cursor: pointer;
+.cycle-details .section-title {
   color: var(--muted);
   padding: 9px 0;
-}
-.cycle-details summary:focus-visible {
-  outline: 2px solid var(--blue);
-  outline-offset: 3px;
 }
 .cycle-action {
   margin-top: 18px;
@@ -1541,7 +1539,7 @@ dialog::backdrop {
   footer nav {
     gap: 12px 20px;
   }
-  .cycle-details summary {
+  .cycle-details .section-title {
     min-height: 44px;
   }
   .feed-top > .avatar {

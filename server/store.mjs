@@ -245,6 +245,7 @@ async function readState(tx, runId) {
       ...(e.pr_id ? { pr: e.pr_id } : {}),
       ...e.data,
       recordedAt: e.recorded_at,
+      sequence: e.sequence,
     })),
     runs: (
       await tx.query(

@@ -6,7 +6,7 @@ test("React scenario, persistent state, games, rankings, keyboard and narrow lay
 }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/");
+  await page.goto("/#/home");
   await expect(
     page.getByRole("heading", { name: "Workspace overview", exact: true }),
   ).toBeVisible();
@@ -52,10 +52,15 @@ test("React scenario, persistent state, games, rankings, keyboard and narrow lay
         document.documentElement.clientWidth,
     ),
   ).toBe(true);
-  await page
-    .getByRole("combobox", { name: "Section", exact: true })
-    .selectOption("profile");
-  await page.getByRole("button", { name: "Go", exact: true }).click();
+  const navigation = page.getByRole("navigation", {
+    name: "Main navigation",
+    exact: true,
+  });
+  await expect(navigation.locator("a")).toHaveCount(13);
+  await expect(navigation.locator("details, select")).toHaveCount(0);
+  await navigation
+    .getByRole("link", { name: "My profile", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Your profile", exact: true }),
   ).toBeVisible();
@@ -85,7 +90,7 @@ test("Observer registration, profile changes, bookmarks, session persistence and
   await expect(
     page.getByRole("status").filter({ hasText: "Profile saved." }),
   ).toBeVisible();
-  await page.locator('.directory-link[href="#/repo/orbit"]').click();
+  await page.locator('.directory-link > a[href="#/repo/orbit"]').click();
   await page.getByRole("button", { name: "Save", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Saved", exact: true }),

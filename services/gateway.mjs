@@ -47,23 +47,38 @@ export async function createGateway({
           method: request.method,
           headers: {
             "x-commit-zero": "local-demo",
+            ...(request.method === "GET" && request.headers["if-none-match"]
+              ? { "if-none-match": request.headers["if-none-match"] }
+              : {}),
+            "x-cz-browser-origin":
+              request.headers.origin || `http://${request.headers.host}`,
             ...(request.headers.cookie
               ? { cookie: request.headers.cookie }
               : {}),
             ...(request.body ? { "content-type": "application/json" } : {}),
           },
           body: request.body ? JSON.stringify(request.body) : undefined,
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(
+            /^\/api\/auth\/oauth\/(github|google)\/callback(?:\?|$)/.test(
+              request.url,
+            )
+              ? 25000
+              : 10000,
+          ),
+          redirect: "manual",
         });
         for (const key of [
           "content-type",
-          "set-cookie",
+          "location",
+          "referrer-policy",
           "content-disposition",
           "etag",
         ]) {
           const value = response.headers.get(key);
           if (value) reply.header(key, value);
         }
+        const cookies = response.headers.getSetCookie();
+        if (cookies.length) reply.header("set-cookie", cookies);
         return reply.code(response.status).send(await response.text());
       } catch {
         return reply.code(503).send({

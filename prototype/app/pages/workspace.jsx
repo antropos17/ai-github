@@ -1,8 +1,19 @@
+import { Contributions } from "../components/contributions.jsx";
+import { ProjectContributions } from "../components/project-contributions.jsx";
+import { ScenarioProjectTimeline } from "../components/project-timeline.jsx";
+import {
+  ProjectMark,
+  ProjectKind,
+  projectKind,
+} from "../components/project-mark.jsx";
+import { CategoryMark } from "../components/category-mark.jsx";
+import { Commons } from "./commons.jsx";
 import { checkLabel } from "../format.mjs";
 import React, { useState } from "react";
 import { useAccount, useResource, useWorkspace } from "../hooks.mjs";
-import { path } from "../router.mjs";
+import { path, replaceRoute } from "../router.mjs";
 import { stages, before, after } from "../../../shared/scenario.mjs";
+import { TimelineFeed } from "./timeline.jsx";
 import {
   Avatar,
   Badge,
@@ -27,9 +38,7 @@ export function Overview({ preview }) {
   const filename = Object.keys(project.files)[0];
   return (
     <>
-      <div className="overview-heading">
-        <h1>Workspace overview</h1>
-      </div>
+      <PageHeading title="Workspace overview" />
       <div className="overview-layout">
         <section className="overview-work">
           <article
@@ -86,57 +95,7 @@ export function Overview({ preview }) {
             </a>
           </div>
           <div className="activity-feed">
-            {data.events.map((e) => {
-              const repo = data.repos.find((r) => r.id === e.repo),
-                agent = data.agents.find((a) => a.id === e.actor);
-              const key = `${e.step || 0}-${e.actor}-${e.repo}-${e.type}`;
-              return (
-                <article className="feed-item" data-event={key} key={key}>
-                  <div className="feed-top">
-                    <Avatar agent={agent} />
-                    <div className="feed-main">
-                      <div className="feed-title">
-                        <Person id={e.actor} picture={false} />{" "}
-                        <span>{e.text}</span>
-                      </div>
-                      <div className="feed-box">
-                        <RepoLink repo={repo} />
-                        <p>{e.detail}</p>
-                        <div className="repo-meta">
-                          {e.pr && (
-                            <a href={path("pr", e.pr)}>
-                              <Icon name="pr" /> #{e.pr}
-                            </a>
-                          )}
-                          <a
-                            href={path("repo", repo.id, "stars")}
-                            aria-label={`${repo.stars.length} stars for ${repo.name}`}
-                          >
-                            <Icon name="star" /> {repo.stars.length}
-                          </a>
-                          {e.type === "learn" && (
-                            <a href={path("agent", e.actor, "memory")}>
-                              View memory
-                            </a>
-                          )}
-                          {e.type === "create" && repo.game && (
-                            <button
-                              className="btn"
-                              onClick={() => preview(repo)}
-                            >
-                              Open project
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    <span className="feed-time">
-                      {e.step ? `Step ${e.step}` : "Initial"}
-                    </span>
-                  </div>
-                </article>
-              );
-            })}
+            <TimelineFeed compact />
           </div>
         </section>
         <aside className="overview-aside">
@@ -185,8 +144,8 @@ export function Overview({ preview }) {
                 </p>
               </div>
             </div>
-            <details className="cycle-details">
-              <summary>All scenario steps</summary>
+            <section className="cycle-details">
+              <h3 className="section-title">All scenario steps</h3>
               <ol className="step-list">
                 {stages.map((stage, i) => (
                   <li
@@ -202,7 +161,7 @@ export function Overview({ preview }) {
                   </li>
                 ))}
               </ol>
-            </details>
+            </section>
             {data.step === 10 && (
               <a
                 className="btn green cycle-action"
@@ -213,8 +172,8 @@ export function Overview({ preview }) {
             )}
           </section>
           <p className="observer-note">
-            Agent actions follow a saved scenario. Real models are not
-            connected. <a href="#/sandbox">About this environment</a>
+            This overview follows the saved scenario.{" "}
+            <a href="#/sandbox">About this environment</a>
           </p>
         </aside>
       </div>
@@ -259,40 +218,156 @@ export function Agents() {
   const { data } = useWorkspace();
   return (
     <>
-      <PageHeading title="Agents">
-        Independent accounts, repositories, interests, and project memory.
+      <PageHeading
+        title="Agents"
+        actions={
+          <a className="btn green" href="#/my-agents/new">
+            Create your agent
+          </a>
+        }
+      >
+        Scenario participants and their recorded contributions.
       </PageHeading>
-      <AgentRows agents={data.agents} />
+      <div className="page-columns">
+        <div className="page-primary">
+          <AgentRows agents={data.agents} />
+        </div>
+        <aside className="page-support" aria-label="Agent workspaces">
+          <section>
+            <h2>Local agents</h2>
+            <nav className="support-links">
+              <a href="#/my-agents">Your configurations</a>
+              <a href="#/commons">Run a project task</a>
+              <a href="#/leaderboard">Contribution ranking</a>
+            </nav>
+          </section>
+          <section>
+            <h2>About these profiles</h2>
+            <p>
+              Simulated accounts. Local model calls appear in the agent
+              workspace.
+            </p>
+          </section>
+        </aside>
+      </div>
     </>
   );
 }
-export function RepositoryDirectory() {
+export function RepositoryDirectory({ type, query = "" }) {
   const { data } = useWorkspace();
-  const [query, setQuery] = useState("");
+  const kind =
+    type === "game" ? "Game" : type === "library" ? "Library" : "all";
+  function setFilters(nextKind, nextQuery) {
+    const params = new URLSearchParams();
+    if (nextKind !== "all") params.set("type", nextKind.toLowerCase());
+    if (nextQuery) params.set("q", nextQuery);
+    const search = params.toString();
+    replaceRoute(`#/repos${search ? `?${search}` : ""}`);
+  }
+  const matching = data.repos.filter((repo) =>
+    `${repo.owner}/${repo.name} ${repo.desc}`
+      .toLowerCase()
+      .includes(query.trim().toLowerCase()),
+  );
+  const visible = matching.filter(
+    (repo) => kind === "all" || projectKind(repo) === kind,
+  );
+  const categories = [
+    ["all", "All"],
+    ["Game", "Games"],
+    ["Library", "Libraries"],
+  ];
   return (
     <>
       <PageHeading title="Repositories">
-        Games, shared tools, and new combinations of ideas.
+        Games and libraries · saved scenario.
       </PageHeading>
-      <div className="filters">
-        <label className="sr" htmlFor="repository-filter">
-          Filter repositories
-        </label>
-        <input
-          id="repository-filter"
-          placeholder="Find a repository…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        <span className="small muted">{data.repos.length} in this run</span>
+      <div className="page-columns">
+        <div className="page-primary">
+          <div className="catalog-controls">
+            <div
+              className="segmented repository-types"
+              role="group"
+              aria-label="Project type"
+            >
+              {categories.map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  className="btn"
+                  aria-pressed={kind === id}
+                  onClick={() => setFilters(id, query)}
+                >
+                  {label}
+                  <span className="count" aria-hidden="true">
+                    {
+                      matching.filter(
+                        (repo) => id === "all" || projectKind(repo) === id,
+                      ).length
+                    }
+                  </span>
+                </button>
+              ))}
+            </div>
+            <div className="filters repository-filters">
+              <label className="sr" htmlFor="repository-filter">
+                Filter repositories
+              </label>
+              <input
+                id="repository-filter"
+                type="search"
+                placeholder="Find a repository…"
+                value={query}
+                onChange={(e) => setFilters(kind, e.target.value)}
+              />
+              <span className="small muted" role="status">
+                {visible.length} of {data.repos.length} repositories
+              </span>
+            </div>
+          </div>
+          {visible.length ? (
+            <Repositories repos={visible} />
+          ) : (
+            <Empty>
+              <p>No repositories match these filters.</p>
+              <button
+                className="btn"
+                onClick={() => {
+                  setFilters("all", "");
+                }}
+              >
+                Clear filters
+              </button>
+            </Empty>
+          )}
+        </div>
+        <aside className="page-support" aria-label="Repository context">
+          <section>
+            <h2>Project owners</h2>
+            <nav className="support-links">
+              {data.agents.map((agent) => (
+                <a href={path("agent", agent.id, "repos")} key={agent.id}>
+                  <Avatar agent={agent} />
+                  {agent.name}
+                  <span className="count">
+                    {
+                      data.repos.filter((repo) => repo.owner === agent.id)
+                        .length
+                    }
+                  </span>
+                </a>
+              ))}
+            </nav>
+          </section>
+          <section>
+            <h2>Local projects</h2>
+            <nav className="support-links">
+              <a href="#/commons?view=projects">Agent workspace projects</a>
+              <a href="#/commons?view=changes">Review local PRs</a>
+            </nav>
+          </section>
+        </aside>
       </div>
-      <Repositories
-        repos={data.repos.filter((r) =>
-          `${r.owner}/${r.name} ${r.desc}`
-            .toLowerCase()
-            .includes(query.toLowerCase()),
-        )}
-      />
     </>
   );
 }
@@ -302,115 +377,150 @@ export function AgentProfile({ id, tab = "overview" }) {
   if (!a) return <NotFound />;
   const own = data.repos.filter((r) => r.owner === id),
     starred = data.repos.filter((r) => r.stars.includes(id));
+  const forks = own.filter((r) => r.forkOf);
+  const pulls = data.prs.filter((p) => p.author === id);
+  const accepted = pulls.filter((pull) => pull.status === "merged");
+  const improved = accepted.filter((pull) =>
+    data.repos.some((repo) => repo.id === pull.repo && repo.owner !== id),
+  );
+  const created = own
+    .filter((repo) => !repo.forkOf)
+    .map((project) => ({ project }));
   const follower = data.agents.filter((x) => x.follows.includes(id));
   return (
-    <div className="profile-layout">
-      <aside className="profile-sidebar">
+    <>
+      <div className="profile-identity">
+        {" "}
         <Avatar agent={a} size="large" />
         <h1 className="profile-name">{a.name}</h1>
         <div className="handle">@{id}</div>
         <span className="pill blue">AI agent · {a.provider}</span>
-        <p className="bio">{a.bio}</p>
-        <div className="profile-stats">
-          <span>
-            <b>{own.length}</b> repositories
-          </span>
-          <span>
-            <Icon name="star" />{" "}
-            <b>{own.reduce((n, r) => n + r.stars.length, 0)}</b> received
-          </span>
-        </div>
-        <div className="profile-details">
-          {a.focus}
-          <br />
-          Following:{" "}
-          {a.follows.map((x, i) => (
-            <React.Fragment key={x}>
-              {i > 0 && ", "}
-              <Person id={x} picture={false} />
-            </React.Fragment>
-          ))}
-          <br />
-          Followers:{" "}
-          {follower.map((x, i) => (
-            <React.Fragment key={x.id}>
-              {i > 0 && ", "}
-              <Person id={x.id} picture={false} />
-            </React.Fragment>
-          ))}
-        </div>
-        <p className="small muted">
-          Simulated account. No connection to {a.provider}.
-        </p>
-        <a href="#/leaderboard">View leaderboard</a>
-      </aside>
-      <section>
-        <Tabs
-          items={[
-            ["overview", "Overview", path("agent", id)],
-            ["repos", "Repositories", path("agent", id, "repos"), own.length],
-            ["stars", "Stars", path("agent", id, "stars"), starred.length],
-            ["memory", "Memory", path("agent", id, "memory"), a.memory.length],
-          ]}
-          selected={tab}
-        />
-        {tab === "memory" ? (
-          <>
-            <p className="page-intro">
-              Lessons saved from projects and reviews. This is scenario memory,
-              not model training.
-            </p>
-            {a.memory.length ? (
-              a.memory.map((m, i) => (
-                <article className="memory-item" key={`${m.from}-${i}`}>
-                  <h2>{m.title}</h2>
-                  <p>{m.text}</p>
-                  <div className="memory-source">
-                    Source: <a href={path("repo", m.from)}>{m.from}</a>
-                    {m.pr && (
-                      <>
-                        {" "}
-                        · <a href={path("pr", m.pr)}>Pull request #{m.pr}</a>
-                      </>
-                    )}
-                  </div>
-                </article>
-              ))
-            ) : (
-              <Empty>
-                No saved lessons yet. Gemini records one at step eight.
-              </Empty>
-            )}
-          </>
-        ) : (
-          <>
-            <h2>{tab === "stars" ? "Starred repositories" : "Repositories"}</h2>
-            <Repositories repos={tab === "stars" ? starred : own} />
-            {tab === "overview" && (
-              <section className="profile-activity">
-                <h2>Recent activity</h2>
-                {data.events
-                  .filter((e) => e.actor === id)
-                  .map((e, i) => (
-                    <div className="check-row" key={i}>
-                      <Icon name={e.type === "star" ? "star" : "pr"} />
-                      <span>
-                        {e.text} ·{" "}
-                        <a
-                          href={e.pr ? path("pr", e.pr) : path("repo", e.repo)}
-                        >
-                          {e.repo}
-                          {e.pr && ` #${e.pr}`}
-                        </a>
-                      </span>
+      </div>
+      <div className="page-columns profile-workspace">
+        <section>
+          <Tabs
+            items={[
+              ["overview", "Overview", path("agent", id)],
+              ["timeline", "Timeline", path("agent", id, "timeline")],
+              ["repos", "Repositories", path("agent", id, "repos"), own.length],
+              ["forks", "Forks", path("agent", id, "forks"), forks.length],
+              [
+                "pulls",
+                "Pull requests",
+                path("agent", id, "pulls"),
+                pulls.length,
+              ],
+              ["stars", "Stars", path("agent", id, "stars"), starred.length],
+              [
+                "memory",
+                "Memory",
+                path("agent", id, "memory"),
+                a.memory.length,
+              ],
+            ]}
+            selected={tab}
+          />
+          {tab === "forks" ? (
+            <Repositories repos={forks} />
+          ) : tab === "pulls" ? (
+            <PullList prs={pulls} />
+          ) : tab === "timeline" ? (
+            <TimelineFeed key={id} actor={id} />
+          ) : tab === "memory" ? (
+            <>
+              <p className="page-intro">
+                Lessons saved from projects and reviews. This is scenario
+                memory, not model training.
+              </p>
+              {a.memory.length ? (
+                a.memory.map((m, i) => (
+                  <article className="memory-item" key={`${m.from}-${i}`}>
+                    <h2>{m.title}</h2>
+                    <p>{m.text}</p>
+                    <div className="memory-source">
+                      Source: <a href={path("repo", m.from)}>{m.from}</a>
+                      {m.pr && (
+                        <>
+                          {" "}
+                          · <a href={path("pr", m.pr)}>Pull request #{m.pr}</a>
+                        </>
+                      )}
                     </div>
-                  ))}
-              </section>
-            )}
-          </>
-        )}
-      </section>
-    </div>
+                  </article>
+                ))
+              ) : (
+                <Empty>
+                  No saved lessons yet. Gemini records one at step eight.
+                </Empty>
+              )}
+            </>
+          ) : (
+            <>
+              {tab === "overview" ? (
+                <Contributions
+                  created={created}
+                  improved={improved}
+                  accepted={accepted}
+                  projects={data.repos}
+                  simulated
+                />
+              ) : (
+                <>
+                  <h2>
+                    {tab === "stars" ? "Starred repositories" : "Repositories"}
+                  </h2>
+                  <Repositories repos={tab === "stars" ? starred : own} />
+                </>
+              )}
+              {tab === "overview" && (
+                <section className="profile-activity">
+                  <h2>Recent activity</h2>
+                  <TimelineFeed key={id} actor={id} compact />
+                </section>
+              )}
+            </>
+          )}
+        </section>
+        <aside
+          className="profile-sidebar page-support"
+          aria-label="Agent details"
+        >
+          <p className="bio">{a.bio}</p>
+          <div className="profile-stats">
+            <span>
+              <b>{own.length}</b> repositories
+            </span>
+            <span>
+              <Icon name="star" />{" "}
+              <b>{own.reduce((n, r) => n + r.stars.length, 0)}</b> received
+            </span>
+          </div>
+          <div className="profile-details">
+            {a.focus}
+            <br />
+            Following:{" "}
+            {a.follows.map((x, i) => (
+              <React.Fragment key={x}>
+                {i > 0 && ", "}
+                <Person id={x} picture={false} />
+              </React.Fragment>
+            ))}
+            <br />
+            Followers:{" "}
+            {follower.map((x, i) => (
+              <React.Fragment key={x.id}>
+                {i > 0 && ", "}
+                <Person id={x.id} picture={false} />
+              </React.Fragment>
+            ))}
+          </div>
+          <p className="small muted">
+            Simulated account. No connection to {a.provider}.
+          </p>
+          <a href="#/leaderboard">View leaderboard</a>
+        </aside>
+      </div>
+    </>
   );
 }
 
@@ -444,7 +554,12 @@ export function Repository({ id, tab = "code", file, preview, notify }) {
     }
   }
   let body;
-  if (tab === "pulls") body = <PullList prs={prs} />;
+  if (tab === "activity")
+    body = (
+      <ScenarioProjectTimeline key={`${data.runId}/${id}`} projectId={id} />
+    );
+  else if (tab === "chat") body = <Commons repoId={id} embedded />;
+  else if (tab === "pulls") body = <PullList prs={prs} />;
   else if (tab === "issues")
     body = issues.length ? (
       <div className="pr-list">
@@ -508,75 +623,56 @@ export function Repository({ id, tab = "code", file, preview, notify }) {
           </span>
           <span className="small muted">{r.commits} commits</span>
         </div>
-        <div className="file-list">
-          <div className="file-list-header">
-            <span>
-              <Person id={r.owner} />{" "}
-              <span className="muted">
-                {id === "orbit" && data.step >= 7
-                  ? "fix: clamp frame delta"
-                  : "updated the project"}
+        <div className="repository-files">
+          <div className="file-list">
+            <div className="file-list-header">
+              <span>
+                <Person id={r.owner} />{" "}
+                <span className="muted">
+                  {id === "orbit" && data.step >= 7
+                    ? "fix: clamp frame delta"
+                    : "updated the project"}
+                </span>
               </span>
-            </span>
-            <span className="muted">main</span>
+              <span className="muted">main</span>
+            </div>
+            {Object.keys(r.files).map((f) => (
+              <a
+                href={`${path("repo", id, "code")}/${encodeURIComponent(f)}`}
+                className={f === filename ? "selected" : ""}
+                aria-current={f === filename ? "page" : undefined}
+                key={f}
+              >
+                <Icon name="file" />
+                {f}
+                <span className="file-description">
+                  {f.endsWith(".md") ? "Project description" : "Source module"}
+                </span>
+              </a>
+            ))}
           </div>
-          {Object.keys(r.files).map((f) => (
-            <a
-              href={`${path("repo", id, "code")}/${encodeURIComponent(f)}`}
-              className={f === filename ? "selected" : ""}
-              aria-current={f === filename ? "page" : undefined}
-              key={f}
-            >
-              <Icon name="file" />
-              {f}
-              <span className="file-description">
-                {f.endsWith(".md") ? "Project description" : "Source module"}
+          <div className="code-panel">
+            <div className="code-head">
+              <span>
+                <Icon name="code" /> {filename}{" "}
+                <span className="muted">
+                  · {r.files[filename].trimEnd().split("\n").length} lines
+                </span>
               </span>
-            </a>
-          ))}
-        </div>
-        <div className="code-panel">
-          <div className="code-head">
-            <span>
-              <Icon name="code" /> {filename}{" "}
-              <span className="muted">
-                · {r.files[filename].trimEnd().split("\n").length} lines
-              </span>
-            </span>
-            <button className="btn" data-copy={filename} onClick={copy}>
-              Copy
-            </button>
+              <button className="btn" data-copy={filename} onClick={copy}>
+                Copy
+              </button>
+            </div>
+            <SourceCode text={r.files[filename]} />
           </div>
-          <SourceCode text={r.files[filename]} />
         </div>
-        <article className="readme">
-          <h2>{r.name}</h2>
-          <p>{r.desc}</p>
-          {r.forkOf && (
-            <p>
-              Forked from <a href={path("repo", r.forkOf)}>{r.forkOf}</a>.
-            </p>
-          )}
-          {r.parents.length > 0 && (
-            <>
-              <h3>Built on</h3>
-              <Lineage repo={r} />
-            </>
-          )}
-          <p>
-            Demonstration repository.{" "}
-            {r.game
-              ? "The preview opens a playable mini-game."
-              : "A shared library for other agents."}
-          </p>
-        </article>
       </>
     );
   return (
     <>
       <div className="repo-header">
         <h1>
-          <Icon name="repo" />
+          <ProjectMark repo={r} />
           <a href={path("agent", r.owner)}>{r.owner}</a>
           <span className="muted">/</span>
           <a href={path("repo", id)}>
@@ -585,6 +681,11 @@ export function Repository({ id, tab = "code", file, preview, notify }) {
           <span className="pill">Sandbox</span>
         </h1>
         <div className="repo-header-actions">
+          {r.game && (
+            <button className="btn green" onClick={() => preview(r)}>
+              Open preview
+            </button>
+          )}
           {account.user ? (
             <button className="btn" disabled={saving} onClick={save}>
               {account.bookmarks.includes(id) ? "Saved" : "Save"}
@@ -629,6 +730,9 @@ export function Repository({ id, tab = "code", file, preview, notify }) {
             prs.filter((p) => p.status === "open").length,
           ],
           ["lineage", "Lineage", path("repo", id, "lineage")],
+          ["chat", "Agent chat", path("repo", id, "chat")],
+          ["versions", "Versions", `${path("commons", id)}?view=versions`],
+          ["activity", "Timeline", path("repo", id, "activity")],
           ...(["stars", "forks"].includes(tab)
             ? [
                 [
@@ -641,29 +745,35 @@ export function Repository({ id, tab = "code", file, preview, notify }) {
         ]}
       />
       <div className="repo-body">
-        <section>{body}</section>
+        <section>
+          {body}
+          {tab === "code" && (
+            <ScenarioProjectTimeline
+              key={`${data.runId}/${id}`}
+              projectId={id}
+            />
+          )}
+        </section>
         <aside className="repo-aside">
           <section className="side-block">
             <h2>About</h2>
+            <ProjectKind repo={r} />
             <p>{r.desc}</p>
-            {r.game && (
-              <button className="btn green" onClick={() => preview(r)}>
-                Open preview
-              </button>
-            )}
+            <p className="small muted">
+              Scenario repository ·{" "}
+              {r.game ? "playable preview" : "shared library"}
+            </p>
             <div className="topics">
               {r.topics.map((t) => (
                 <span className="topic" key={t}>
+                  <CategoryMark name={t} />
                   {t}
                 </span>
               ))}
             </div>
             <RepoMeta repo={r} />
           </section>
-          <section className="side-block">
-            <h2>Owner</h2>
-            <Person id={r.owner} />
-          </section>
+          <ProjectContributions project={r} pulls={prs} simulated />
           <section className="side-block">
             <h2>Project lineage</h2>
             <Lineage repo={r} />
@@ -757,6 +867,37 @@ export function PullRequest({ id, tab = "conversation" }) {
           ["checks", "Checks", path("pr", id, "checks"), 3],
         ]}
       />
+      <div
+        className="pr-summary"
+        role="region"
+        aria-label="Pull request status"
+      >
+        <div className={`merge-box ${p.status}`}>
+          <h3>
+            {p.status === "merged"
+              ? "Pull request merged"
+              : p.approved
+                ? "Review approved"
+                : p.checks === "failed"
+                  ? "Changes requested"
+                  : "Changes under review"}
+          </h3>
+          <p>
+            {p.status === "merged"
+              ? `${r.owner} merged the changes into main.`
+              : "The owner agent merges after successful checks and review."}
+          </p>
+          <div className="repo-meta">
+            <span>{p.approved ? "Approved" : "Awaiting review"}</span>
+            <span>{checkLabel(p)}</span>
+          </div>
+          {p.status === "merged" && (
+            <p>
+              <a href={path("repo", p.repo)}>View updated source</a>
+            </p>
+          )}
+        </div>
+      </div>
       <div className="pr-layout">
         <section>
           {tab === "files" ? (
@@ -788,7 +929,12 @@ export function PullRequest({ id, tab = "conversation" }) {
               ))}
             </div>
           ) : (
-            <div className="timeline">
+            <div
+              className="timeline"
+              role="region"
+              tabIndex={0}
+              aria-label="Pull request discussion"
+            >
               {p.timeline.map((t, i) => (
                 <article className="timeline-entry" key={`${t.type}-${i}`}>
                   <Avatar agent={data.agents.find((a) => a.id === t.actor)} />
@@ -813,33 +959,12 @@ export function PullRequest({ id, tab = "conversation" }) {
               ))}
             </div>
           )}
-          <div className={`merge-box ${p.status}`}>
-            <h3>
-              {p.status === "merged"
-                ? "Pull request merged"
-                : p.approved
-                  ? "Review approved"
-                  : p.checks === "failed"
-                    ? "Changes requested"
-                    : "Changes under review"}
-            </h3>
-            <p>
-              {p.status === "merged"
-                ? `${r.owner} merged the changes into main.`
-                : "The owner agent merges after successful checks and review."}
-            </p>
-            <div className="repo-meta">
-              <span>{p.approved ? "Approved" : "Awaiting review"}</span>
-              <span>{checkLabel(p)}</span>
-            </div>
-            {p.status === "merged" && (
-              <p>
-                <a href={path("repo", p.repo)}>View updated source</a>
-              </p>
-            )}
-          </div>
         </section>
-        <aside className="repo-aside">
+        <aside
+          className="repo-aside page-support"
+          aria-label="Pull request status and people"
+        >
+          {" "}
           <section className="side-block">
             <h2>Reviewer</h2>
             <Person id={r.owner} />
@@ -880,15 +1005,21 @@ export function Issue({ id }) {
         </span>
         <Person id={i.author} /> opened this issue
       </div>
-      <article className="timeline-card">
-        <div className="timeline-card-head">
-          <Person id={i.author} />
+      <div className="page-columns">
+        <div className="page-primary">
+          <article className="timeline-card">
+            <div className="timeline-card-head">
+              <Person id={i.author} />
+            </div>
+            <p>{i.body}</p>
+          </article>
         </div>
-        <p>{i.body}</p>
-      </article>
-      <div className="merge-box">
-        <h2>{i.status === "closed" ? "Fixed in main" : "Fix proposed"}</h2>
-        <a href={path("pr", i.pr)}>View pull request #{i.pr}</a>
+        <aside className="page-support" aria-label="Issue resolution">
+          <div className="merge-box">
+            <h2>{i.status === "closed" ? "Fixed in main" : "Fix proposed"}</h2>
+            <a href={path("pr", i.pr)}>View pull request #{i.pr}</a>
+          </div>
+        </aside>
       </div>
     </>
   );
@@ -907,24 +1038,29 @@ export function Search({ query }) {
     <>
       <PageHeading title={query ? `Search · ${query}` : "Search"} />
       {query ? (
-        <>
-          <section className="search-section">
-            <h2>Repositories · {repos.length}</h2>
-            <Repositories repos={repos} />
-          </section>
-          <section className="search-section">
-            <h2>Agents · {agents.length}</h2>
-            {agents.length ? (
-              <AgentRows agents={agents} />
-            ) : (
-              <Empty>No matching agents.</Empty>
-            )}
-          </section>
-          <section className="search-section">
-            <h2>Pull requests · {prs.length}</h2>
-            <PullList prs={prs} />
-          </section>
-        </>
+        <div className="page-columns">
+          <div className="page-primary">
+            <section className="search-section">
+              <h2>Repositories · {repos.length}</h2>
+              <Repositories repos={repos} />
+            </section>
+            <section className="search-section">
+              <h2>Pull requests · {prs.length}</h2>
+              <PullList prs={prs} />
+            </section>
+          </div>
+          <aside className="page-support" aria-label="Matching agents">
+            {" "}
+            <section className="search-section">
+              <h2>Agents · {agents.length}</h2>
+              {agents.length ? (
+                <AgentRows agents={agents} />
+              ) : (
+                <Empty>No matching agents.</Empty>
+              )}
+            </section>
+          </aside>
+        </div>
       ) : (
         <Empty>
           Search for an agent, repository, or pull request using the search
@@ -938,42 +1074,55 @@ export function History() {
   const { data } = useWorkspace();
   return (
     <>
-      <div className="section-top">
-        <PageHeading title="Run history">
-          Every cycle is stored separately. Starting a new run preserves earlier
-          runs.
-        </PageHeading>
-        <a className="btn" href="/api/export" download>
-          Export current run
-        </a>
+      <PageHeading
+        title="Run history"
+        actions={
+          <a className="btn" href="/api/export" download>
+            Export current run
+          </a>
+        }
+      >
+        Saved scenario runs.
+      </PageHeading>
+      <div className="page-columns">
+        <div className="page-primary">
+          <div className="run-list">
+            {data.runs.map((r, i) => (
+              <article className="run-row" key={r.id}>
+                <div>
+                  <h2>{r.id === data.runId ? "Current run" : "Saved run"}</h2>
+                  <p className="small muted">
+                    {new Date(r.created_at).toLocaleString("en-US")} ·{" "}
+                    <code>{r.id.slice(0, 8)}</code>
+                  </p>
+                </div>
+                <span className={`pill ${r.step === 10 ? "green" : ""}`}>
+                  {r.step === 10 ? "Completed" : `Step ${r.step} / 10`}
+                </span>
+                <a
+                  className="btn"
+                  href={`/api/runs/${r.id}/export`}
+                  download
+                  aria-label={`Download run ${i + 1}`}
+                >
+                  JSON
+                </a>
+              </article>
+            ))}
+          </div>
+        </div>
+        <aside className="page-support" aria-label="Run storage">
+          <h2>Saved history</h2>
+          <p className="history-note small muted">
+            Showing the latest 20 runs. All runs remain stored.
+          </p>
+          <p>New runs preserve earlier records.</p>
+          <nav className="support-links">
+            <a href="#/lab">Experiment history</a>
+            <a href="#/commons?view=tasks">Local agent tasks</a>
+          </nav>
+        </aside>
       </div>
-      <div className="run-list">
-        {data.runs.map((r, i) => (
-          <article className="run-row" key={r.id}>
-            <div>
-              <h2>{r.id === data.runId ? "Current run" : "Saved run"}</h2>
-              <p className="small muted">
-                {new Date(r.created_at).toLocaleString("en-US")} ·{" "}
-                <code>{r.id.slice(0, 8)}</code>
-              </p>
-            </div>
-            <span className={`pill ${r.step === 10 ? "green" : ""}`}>
-              {r.step === 10 ? "Completed" : `Step ${r.step} / 10`}
-            </span>
-            <a
-              className="btn"
-              href={`/api/runs/${r.id}/export`}
-              download
-              aria-label={`Download run ${i + 1}`}
-            >
-              JSON
-            </a>
-          </article>
-        ))}
-      </div>
-      <p className="history-note small muted">
-        Showing the latest 20 runs. All runs remain stored.
-      </p>
     </>
   );
 }
@@ -981,23 +1130,22 @@ export function Environment() {
   const health = useResource("health");
   return (
     <>
-      <PageHeading title="Sandbox environment">
-        An agent workspace with persistent projects, reviews, and memory.
+      <PageHeading
+        title="Sandbox environment"
+        actions={
+          <button
+            className="btn"
+            onClick={health.retry}
+            disabled={health.loading}
+          >
+            Refresh health
+          </button>
+        }
+      >
+        Local services and execution boundaries.
       </PageHeading>
-      <div className="sandbox-layout">
+      <div className="sandbox-layout page-columns">
         <section>
-          <div className="notice">
-            <h2>What is running</h2>
-            <p>
-              React renders the workspace. Independent local services handle
-              repositories, accounts, and contribution rankings through an API
-              gateway.
-            </p>
-            <p>
-              Agent activity is still a deterministic scenario. Real model APIs,
-              Git hosting, and arbitrary-code workers are not connected.
-            </p>
-          </div>
           <h2>Service health</h2>
           {health.error && (
             <ErrorMessage message={health.error} retry={health.retry} />
@@ -1020,20 +1168,19 @@ export function Environment() {
           ) : (
             <p role="status">Checking services…</p>
           )}
-          <button
-            className="btn"
-            onClick={health.retry}
-            disabled={health.loading}
-          >
-            Refresh health
-          </button>
         </section>
-        <aside>
+        <aside className="page-support" aria-label="Execution boundaries">
           <h2>Boundaries</h2>
           <ul className="plain-list">
             <li>Observer accounts do not act as agents.</li>
-            <li>Reviews and checks belong to the scenario.</li>
-            <li>Code previews are playable demonstrations.</li>
+            <li>
+              Scenario reviews are simulated. Commons uses separate local
+              Builder and Reviewer calls.
+            </li>
+            <li>
+              Commons parses JavaScript; it does not execute it. Language lab
+              runs a bounded interpreter.
+            </li>
             <li>
               Memory stores lessons and evidence; it does not train model
               weights.
@@ -1041,7 +1188,7 @@ export function Environment() {
             <li>All services bind to this computer's loopback interface.</li>
           </ul>
           <p>
-            <a href="#/leaderboard">Explore the contribution leaderboard</a>
+            <a href="#/commons">Agent workspace</a>
           </p>
         </aside>
       </div>

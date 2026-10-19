@@ -10,6 +10,7 @@ import {
   parseRoute,
   path,
   previousRoute,
+  navigationIntent,
   routeGroup,
   routeScroll,
   useRoute,
@@ -31,19 +32,36 @@ import {
 } from "./pages/workspace.jsx";
 import { Leaderboard } from "./pages/leaderboard.jsx";
 import { Authentication, MyProfile } from "./pages/account.jsx";
+import { Discover, MyAgents } from "./pages/network.jsx";
+import { Timeline } from "./pages/timeline.jsx";
+import { Laboratory } from "./pages/laboratory.jsx";
+import { CategoryMark } from "./components/category-mark.jsx";
+import { ProjectMark } from "./components/project-mark.jsx";
+import { Commons } from "./pages/commons.jsx";
+import { ModelProfile } from "./pages/model-profile.jsx";
 const navigation = [
+  ["discover", "Discover"],
+  ["commons", "Agent workspace"],
+  ["timeline", "Timeline"],
+  ["lab", "Language lab"],
   ["home", "Overview"],
   ["repos", "Repositories"],
   ["pulls", "Pull requests"],
   ["agents", "Agents"],
   ["leaderboard", "Leaderboard"],
+  ["my-agents", "Your agents"],
   ["sandbox", "Environment"],
   ["history", "Run history"],
   ["profile", "My profile"],
 ];
 const selectedNavigation = (kind) =>
-  ({ repo: "repos", issue: "repos", pr: "pulls", agent: "agents" })[kind] ||
-  kind;
+  ({
+    repo: "repos",
+    issue: "repos",
+    pr: "pulls",
+    agent: "agents",
+    model: "agents",
+  })[kind] || kind;
 function useTheme() {
   const [theme, setTheme] = useState(
     document.documentElement.dataset.theme || "light",
@@ -74,10 +92,33 @@ function Page({ route, preview, notify }) {
   const { segments, query } = parseRoute(route),
     [kind = "home", id, tab, file] = segments;
   switch (kind) {
+    case "commons":
+      return (
+        <Commons
+          repoId={id}
+          initialView={query.get("view")}
+          initialVersion={query.get("version")}
+          initialPullId={query.get("pull")}
+          initialTaskId={query.get("task")}
+        />
+      );
+    case "lab":
+      return <Laboratory id={id} />;
+    case "timeline":
+      return <Timeline agent={query.get("agent") || ""} />;
+    case "discover":
+      return <Discover view={query.get("view")} preview={preview} />;
+    case "my-agents":
+      return <MyAgents id={id} repository={query.get("repo") || ""} />;
     case "home":
       return <Overview preview={preview} />;
     case "repos":
-      return <RepositoryDirectory />;
+      return (
+        <RepositoryDirectory
+          type={query.get("type")}
+          query={query.get("q") || ""}
+        />
+      );
     case "repo":
       return (
         <Repository
@@ -92,6 +133,8 @@ function Page({ route, preview, notify }) {
       return <Agents />;
     case "agent":
       return <AgentProfile id={id} tab={tab} />;
+    case "model":
+      return <ModelProfile key={`${data.runId}/${id}`} id={id} />;
     case "pulls":
       return (
         <>
@@ -132,13 +175,21 @@ export function App() {
     kind = segments[0] || "home",
     selected = selectedNavigation(kind);
   const [theme, setTheme] = useTheme(),
-    [search, setSearch] = useState(query.get("q") || ""),
-    [mobile, setMobile] = useState(selected),
+    [search, setSearch] = useState(
+      kind === "search" ? query.get("q") || "" : "",
+    ),
     [preview, setPreview] = useState(null),
     [toast, setToast] = useState("");
   const main = useRef(null);
   const handledRoute = useRef(null);
   const notify = useCallback((message) => setToast(message), []);
+  useEffect(() => {
+    if (
+      ["lab", "commons", "model"].includes(kind) ||
+      (kind === "repo" && segments[2] === "chat")
+    )
+      workspace.setPlaying(false);
+  }, [kind, workspace.setPlaying]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 5000);
@@ -146,14 +197,24 @@ export function App() {
   }, [toast]);
   useLayoutEffect(() => {
     if (handledRoute.current === route) return;
+    const initialRoute = handledRoute.current === null;
     handledRoute.current = route;
-    setMobile(selected);
-    if (kind === "search") setSearch(query.get("q") || "");
     const previous = previousRoute();
+    // Catalog filters change the address while the reader is still editing.
+    // Preserve the input, caret and reading position for that same-page update.
+    if (
+      !initialRoute &&
+      kind === "repos" &&
+      parseRoute(previous).segments[0] === "repos"
+    )
+      return;
+    if (kind === "search") setSearch(query.get("q") || "");
     const top =
       routeGroup(previous) === routeGroup(route)
         ? routeScroll.get(previous) || 0
-        : routeScroll.get(route) || 0;
+        : navigationIntent() === "link"
+          ? 0
+          : routeScroll.get(route) || 0;
     window.scrollTo({ top, left: 0, behavior: "instant" });
     main.current?.focus({ preventScroll: true });
     document.title = `${navigation.find(([id]) => id === selected)?.[1] || "Workspace"} · Commit Zero`;
@@ -161,10 +222,6 @@ export function App() {
   function submitSearch(event) {
     event.preventDefault();
     location.hash = `/search?q=${encodeURIComponent(search.trim())}`;
-  }
-  function submitNavigation(event) {
-    event.preventDefault();
-    if (navigation.some(([id]) => id === mobile)) location.hash = `/${mobile}`;
   }
   return (
     <>
@@ -214,152 +271,164 @@ export function App() {
       </header>
       <div className="app-shell">
         <aside className="app-sidebar" aria-label="Workspace navigation">
-          <form
-            className="mobile-navigation"
-            aria-label="Navigate sections"
-            onSubmit={submitNavigation}
-          >
-            <label className="sr" htmlFor="mobile-navigation">
-              Section
-            </label>
-            <select
-              id="mobile-navigation"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value)}
-            >
-              {navigation.map(([id, label]) => (
-                <option value={id} key={id}>
-                  {label}
-                </option>
-              ))}
-              {["search", "login", "signup"].includes(selected) && (
-                <option value={selected} hidden disabled>
-                  {selected === "search"
-                    ? "Search"
-                    : selected === "login"
-                      ? "Sign in"
-                      : "Create account"}
-                </option>
-              )}
-            </select>
-            <button className="btn" type="submit">
-              Go
-            </button>
-          </form>
           <nav className="global-nav" aria-label="Main navigation">
-            {navigation.map(([id, label]) => (
-              <a
-                key={id}
-                href={`#/${id}`}
-                data-nav={id}
-                aria-current={selected === id ? "page" : undefined}
-              >
-                {label}
-                {data && id === "repos" && (
-                  <span className="count">{data.repos.length}</span>
-                )}
-                {data && id === "pulls" && (
-                  <span className="count">
-                    {data.prs.filter((p) => p.status === "open").length}
-                  </span>
-                )}
-              </a>
-            ))}
-          </nav>
-          <div id="workspace-directory">
-            <section className="directory-section">
-              <h2>
-                Repositories{" "}
-                <span className="count">{data?.repos.length || 0}</span>
-              </h2>
-              {data?.repos.map((r) => (
+            {[
+              [
+                "Workspace",
+                ["discover", "commons", "repos", "pulls", "agents"],
+              ],
+              ["Explore", ["timeline", "lab", "home", "leaderboard"]],
+              ["Manage", ["my-agents", "sandbox", "history", "profile"]],
+            ].map(([group, ids]) => {
+              const items = ids.map((id) =>
+                navigation.find(([key]) => key === id),
+              );
+              const links = items.map(([id, label]) => (
                 <a
-                  className="directory-link"
-                  href={path("repo", r.id)}
-                  key={r.id}
-                  title={`${r.owner}/${r.name}`}
+                  key={id}
+                  href={
+                    ["commons", "model"].includes(kind) && id === "pulls"
+                      ? "#/commons?view=changes"
+                      : `#/${id}`
+                  }
+                  data-nav={id}
+                  aria-current={selected === id ? "page" : undefined}
                 >
-                  <Icon name="repo" />
-                  <span>
-                    {r.owner}/{r.name}
-                  </span>
+                  <CategoryMark name={id} />
+                  {label}
+                  {data && id === "repos" && (
+                    <span className="count">{data.repos.length}</span>
+                  )}
+                  {data &&
+                    id === "pulls" &&
+                    !["commons", "model"].includes(kind) && (
+                      <span className="count">
+                        {data.prs.filter((p) => p.status === "open").length}
+                      </span>
+                    )}
                 </a>
-              ))}
-            </section>
-          </div>
+              ));
+              return (
+                <section
+                  className="navigation-group"
+                  key={group}
+                  aria-label={group}
+                >
+                  <h2>{group}</h2>
+                  <div className="navigation-links">{links}</div>
+                </section>
+              );
+            })}
+          </nav>
+          {!["commons", "model"].includes(kind) && (
+            <div id="workspace-directory">
+              <section className="directory-section">
+                <h2>
+                  Repositories{" "}
+                  <span className="count">{data?.repos.length || 0}</span>
+                </h2>
+                {data?.repos.map((r) => (
+                  <div
+                    className="directory-link"
+                    key={r.id}
+                    title={`${r.owner}/${r.name}`}
+                  >
+                    <ProjectMark repo={r} />
+                    <a href={path("repo", r.id)}>
+                      {r.owner}/{r.name}
+                    </a>
+                  </div>
+                ))}
+              </section>
+            </div>
+          )}
         </aside>
         <div className="workspace">
-          <section className="demo-bar" aria-label="Scenario controls">
-            <div className="environment-status">
-              <b>Simulation</b>
-              <span
-                id="connection"
-                data-status={error ? "offline" : busy ? "loading" : "online"}
-              >
-                <span className="connection-dot" aria-hidden="true" />
-                <span id="connection-label" role="status">
-                  {error
-                    ? "Connection unavailable"
-                    : busy
-                      ? "Syncing…"
-                      : "Saved to PostgreSQL"}
-                </span>
-              </span>
-            </div>
-            <div className="playback">
-              <span id="playback-status" role="status">
-                {data ? `Step ${data.step} / 10` : "Loading…"}
-              </span>
-              <button
-                id="playback-toggle"
-                disabled={!data || busy || Boolean(error)}
-                aria-pressed={playing}
-                onClick={() => {
-                  if (data.step === 10) {
-                    void workspace.newRun().then((next) => {
-                      if (next && next.runId !== data.runId) {
-                        routeScroll.delete("#/home");
-                        location.hash = "/home";
-                        window.scrollTo({ top: 0, behavior: "instant" });
+          {!["lab", "commons", "model"].includes(kind) &&
+            !(kind === "repo" && segments[2] === "chat") && (
+              <section className="demo-bar" aria-label="Scenario controls">
+                <div className="environment-status">
+                  <b>Simulation</b>
+                  <span
+                    id="connection"
+                    data-status={
+                      error ? "offline" : busy ? "loading" : "online"
+                    }
+                  >
+                    <span className="connection-dot" aria-hidden="true" />
+                    <span id="connection-label" role="status">
+                      {error
+                        ? "Connection unavailable"
+                        : busy
+                          ? "Syncing…"
+                          : "Saved to PostgreSQL"}
+                    </span>
+                  </span>
+                </div>
+                <div className="playback">
+                  <span id="playback-status" role="status">
+                    {data ? `Step ${data.step} / 10` : "Loading…"}
+                  </span>
+                  <button
+                    id="playback-toggle"
+                    disabled={!data || busy || Boolean(error)}
+                    aria-pressed={playing}
+                    onClick={() => {
+                      if (data.step === 10) {
+                        void workspace.newRun().then((next) => {
+                          if (next && next.runId !== data.runId) {
+                            routeScroll.delete("#/home");
+                            location.hash = "/home";
+                            window.scrollTo({ top: 0, behavior: "instant" });
+                          }
+                        });
+                        return;
                       }
-                    });
-                    return;
-                  }
-                  workspace.setPlaying(!playing);
-                }}
-              >
-                {data?.step === 10
-                  ? "New run"
-                  : playing
-                    ? "Pause cycle"
-                    : "Play cycle"}
-              </button>
-              <button
-                id="playback-next"
-                disabled={!data || busy || Boolean(error) || data.step === 10}
-                onClick={() => {
-                  workspace.setPlaying(false);
-                  void workspace.advance();
-                }}
-              >
-                Next step
-              </button>
-              <button
-                id="sync"
-                aria-label="Refresh workspace"
-                title="Refresh workspace"
-                disabled={busy}
-                onClick={() => {
-                  workspace.setPlaying(false);
-                  void workspace.refresh();
-                }}
-              >
-                <Icon name="sync" />
-              </button>
-            </div>
-          </section>
-          <main id="main" ref={main} tabIndex="-1" aria-busy={!data || busy}>
-            {data || ["login", "signup", "profile"].includes(kind) ? (
+                      workspace.setPlaying(!playing);
+                    }}
+                  >
+                    {data?.step === 10
+                      ? "New run"
+                      : playing
+                        ? "Pause cycle"
+                        : "Play cycle"}
+                  </button>
+                  <button
+                    id="playback-next"
+                    disabled={
+                      !data || busy || Boolean(error) || data.step === 10
+                    }
+                    onClick={() => {
+                      workspace.setPlaying(false);
+                      void workspace.advance();
+                    }}
+                  >
+                    Next step
+                  </button>
+                  <button
+                    id="sync"
+                    aria-label="Refresh workspace"
+                    title="Refresh workspace"
+                    disabled={busy}
+                    onClick={() => {
+                      workspace.setPlaying(false);
+                      void workspace.refresh();
+                    }}
+                  >
+                    <Icon name="sync" />
+                  </button>
+                </div>
+              </section>
+            )}
+          <main
+            id="main"
+            data-page={kind}
+            ref={main}
+            tabIndex="-1"
+            aria-busy={!data || busy}
+          >
+            {data ||
+            ["login", "signup", "profile", "my-agents"].includes(kind) ? (
               <Page route={route} preview={setPreview} notify={notify} />
             ) : (
               <section className="loading-workspace">
@@ -378,13 +447,20 @@ export function App() {
           </main>
           <footer>
             <span>Commit Zero</span>
-            <nav aria-label="More">
+            <nav aria-label="Footer links">
               <a href="#/leaderboard">Leaderboard</a>
               <a href="#/sandbox">Service health</a>
               <a href="/api/export" download>
                 Export data
               </a>
-              <span>Simulated agent activity</span>
+              <span>
+                {["commons", "model"].includes(kind) ||
+                (kind === "repo" && segments[2] === "chat")
+                  ? "Local collaboration records"
+                  : kind === "lab"
+                    ? "Local experiment records"
+                    : "Simulated agent activity"}
+              </span>
             </nav>
           </footer>
         </div>

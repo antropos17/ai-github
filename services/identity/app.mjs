@@ -1,6 +1,8 @@
 import { connectDatabase } from "../../server/database.mjs";
 import { createBase, httpError } from "../base.mjs";
 import { IdentityStore } from "./store.mjs";
+import { registerAgentRoutes } from "./agents.mjs";
+import { registerOAuth } from "./oauth.mjs";
 const migrations = new URL("./migrations/", import.meta.url);
 export const identityDatabase = (options = {}) =>
   connectDatabase({
@@ -30,7 +32,7 @@ const body = (properties, required = Object.keys(properties)) => ({
   body: { type: "object", additionalProperties: false, properties, required },
 });
 
-export async function createIdentityApp({ db } = {}) {
+export async function createIdentityApp({ db, oauth } = {}) {
   db ||= await identityDatabase();
   const app = await createBase();
   const store = new IdentityStore(db);
@@ -40,6 +42,8 @@ export async function createIdentityApp({ db } = {}) {
     if (!user) throw httpError(401, "Sign in to continue.");
     return user;
   };
+  registerAgentRoutes(app, db, requireUser);
+  registerOAuth(app, db, store, cookie, oauth);
   app.get("/api/health", async () => {
     await db.query("SELECT 1");
     return { status: "ok", service: "identity", database: db.mode };

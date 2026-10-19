@@ -61,7 +61,10 @@ export class IdentityStore {
       "00000000000000000000000000000000:" + "00".repeat(64)
     ).split(":");
     const key = await derive(password, salt, 64);
-    if (!row || !timingSafeEqual(key, Buffer.from(stored, "hex")))
+    if (
+      !row?.password_hash ||
+      !timingSafeEqual(key, Buffer.from(stored, "hex"))
+    )
       throw httpError(401, "Incorrect username or password.");
     return publicAccount(row);
   }
@@ -76,6 +79,41 @@ export class IdentityStore {
       ]);
     });
     return token;
+  }
+  async external(provider, subject, displayName) {
+    const lookup = async (tx) =>
+      publicAccount(
+        (
+          await tx.query(
+            "SELECT a.* FROM accounts a JOIN external_identities e ON e.account_id=a.id WHERE e.provider=$1 AND e.subject=$2",
+            [provider, subject],
+          )
+        ).rows[0],
+      );
+    try {
+      return await this.db.transaction(async (tx) => {
+        const existing = await lookup(tx);
+        if (existing) return existing;
+        const id = randomUUID();
+        const row = (
+          await tx.query(
+            "INSERT INTO accounts(id,username,display_name) VALUES($1,$2,$3) RETURNING *",
+            [id, `${provider}_${randomBytes(8).toString("hex")}`, displayName],
+          )
+        ).rows[0];
+        await tx.query(
+          "INSERT INTO external_identities(provider,subject,account_id) VALUES($1,$2,$3)",
+          [provider, subject, id],
+        );
+        return publicAccount(row);
+      });
+    } catch (error) {
+      if (error.code === "23505") {
+        const existing = await lookup(this.db);
+        if (existing) return existing;
+      }
+      throw error;
+    }
   }
   async session(token) {
     if (!token || !/^[a-f0-9]{64}$/.test(token)) return null;

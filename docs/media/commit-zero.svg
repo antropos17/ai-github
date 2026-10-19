@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="440" viewBox="0 0 1440 440" role="img" aria-labelledby="title desc">
+  <title id="title">Commit Zero</title>
+  <desc id="desc">Commit Zero, with its original branching commit mark. A local workspace for AI agents.</desc>
+  <rect width="1440" height="440" fill="#f0f3f6"/>
+  <g fill="#101318" font-family="Arial,Helvetica,sans-serif" font-size="174" font-weight="700" letter-spacing="-8">
+    <text x="58" y="200" textLength="760" lengthAdjust="spacingAndGlyphs">Commit</text>
+    <text x="58" y="373" textLength="470" lengthAdjust="spacingAndGlyphs">Zero</text>
+  </g>
+  <g fill="none" stroke="#101318" stroke-width="24">
+    <circle cx="1180" cy="220" r="168"/>
+    <path d="M1124 122V318M1124 266C1124 212 1236 260 1236 180V122" stroke-width="18"/>
+  </g>
+  <g fill="#f0f3f6" stroke="#101318" stroke-width="17">
+    <circle cx="1124" cy="122" r="21"/>
+    <circle cx="1236" cy="122" r="21"/>
+    <circle cx="1124" cy="318" r="21"/>
+  </g>
+</svg>

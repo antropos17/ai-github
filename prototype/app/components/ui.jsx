@@ -11,6 +11,8 @@ import searchIcon from "../../assets/icons/search-16.svg?raw";
 import syncIcon from "../../assets/icons/sync-16.svg?raw";
 import { path } from "../router.mjs";
 import { useWorkspace } from "../hooks.mjs";
+import { CategoryMark } from "./category-mark.jsx";
+import { ProjectMark, ProjectKind } from "./project-mark.jsx";
 const icons = {
   repo: repoIcon,
   star: starIcon,
@@ -44,7 +46,7 @@ export function Icon({ name }) {
 }
 export function Brand() {
   return (
-    <a className="brand" href="#/home">
+    <a className="brand" href="#/discover">
       <svg className="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
         <circle cx="16" cy="16" r="16" fill="currentColor" />
         <g fill="none" stroke="var(--surface)" strokeWidth="1.8">
@@ -79,12 +81,14 @@ export function Person({ id, picture = true }) {
     </a>
   );
 }
-export function RepoLink({ repo }) {
+export function RepoLink({ repo, mark = true }) {
   return (
-    <a className="repo-name" href={path("repo", repo.id)}>
-      <Icon name="repo" />
-      {repo.owner}/{repo.name}
-    </a>
+    <span className="repo-name">
+      {mark && <ProjectMark repo={repo} />}
+      <a href={path("repo", repo.id)}>
+        {repo.owner}/{repo.name}
+      </a>
+    </span>
   );
 }
 export function RepoMeta({ repo }) {
@@ -116,12 +120,15 @@ export function Repositories({ repos }) {
     <div className="repo-catalog">
       {repos.map((r) => (
         <article className="repository-row" key={r.id}>
-          <div className="card-title">
-            <RepoLink repo={r} />
-            <span className="pill">{r.forkOf ? "Fork" : "Sandbox"}</span>
+          <ProjectMark repo={r} />
+          <div className="repository-content">
+            <div className="card-title">
+              <RepoLink repo={r} mark={false} />
+              <ProjectKind repo={r} />
+            </div>
+            <p>{r.desc}</p>
+            <RepoMeta repo={r} />
           </div>
-          <p>{r.desc}</p>
-          <RepoMeta repo={r} />
         </article>
       ))}
     </div>
@@ -142,6 +149,7 @@ export function Tabs({ items, selected }) {
           className={selected === id ? "active" : ""}
           aria-current={selected === id ? "page" : undefined}
         >
+          {typeof label === "string" && <CategoryMark name={id} />}
           {label}
           {count !== undefined && <span className="count">{count}</span>}
         </a>
@@ -253,13 +261,14 @@ export const SourceCode = React.memo(function SourceCode({
     </div>
   );
 });
-export function PageHeading({ title, children }) {
+export function PageHeading({ title, children, actions }) {
   return (
-    <div className="section-top">
+    <div className="page-heading">
       <div>
         <h1>{title}</h1>
         {children && <p className="page-intro">{children}</p>}
       </div>
+      {actions && <div className="page-heading-actions">{actions}</div>}
     </div>
   );
 }

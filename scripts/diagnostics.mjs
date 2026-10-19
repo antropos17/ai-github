@@ -59,10 +59,12 @@ console.log(
         await Promise.all(
           [
             "runtime/diagnostics",
+            "runtime/browser-results",
             ".cache",
             "runtime/database",
             "runtime/identity",
             "runtime/backups",
+            "runtime/local-model",
           ].map(async (p) => [p, await size(resolve(p))]),
         ),
       ),

@@ -226,9 +226,6 @@ pre,
   font-weight: 600;
   margin: 0 8px 8px;
 }
-.directory-section {
-  padding-top: 24px;
-}
 .team-member div > span {
   margin-top: 2px;
 }
@@ -366,6 +363,13 @@ pre,
   .filters input,
   .mobile-navigation select {
     font-size: 1rem;
+  }
+  .filters input,
+  #search-form button,
+  .mobile-navigation .btn,
+  .repo-meta a {
+    min-height: 44px;
+    min-width: 44px;
   }
   .btn,
   .playback button,

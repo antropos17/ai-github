@@ -7,12 +7,20 @@ import {
 import { createRankingApp } from "../services/ranking/app.mjs";
 import { createGateway } from "../services/gateway.mjs";
 
-export async function createTestSystem({ staticRoot } = {}) {
+export async function createTestSystem({
+  staticRoot,
+  oauth,
+  lab,
+  commons,
+} = {}) {
   const workspace = await createApp({
     db: await connectDatabase({ memory: true, url: null }),
+    lab,
+    commons,
   });
   const identity = await createIdentityApp({
     db: await identityDatabase({ memory: true, url: null }),
+    oauth,
   });
   const ranking = await createRankingApp({
     loadContributions: async () =>
@@ -37,9 +45,13 @@ export async function createTestSystem({ staticRoot } = {}) {
         payload: options.body,
         headers: { host: "localhost", ...options.headers },
       });
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(result.headers))
+        for (const item of Array.isArray(value) ? value : [value])
+          headers.append(key, String(item));
       return new Response(result.body || null, {
         status: result.statusCode,
-        headers: result.headers,
+        headers,
       });
     },
   });

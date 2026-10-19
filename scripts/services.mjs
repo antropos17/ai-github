@@ -25,7 +25,7 @@ export async function startServices({
     );
   };
   try {
-    for (const name of ["workspace", "identity", "ranking", "gateway"]) {
+    for (const name of ["identity", "workspace", "ranking", "gateway"]) {
       const defaults = {
         workspace: Number(process.env.WORKSPACE_PORT || 4185),
         identity: Number(process.env.IDENTITY_PORT || 4186),
@@ -45,6 +45,7 @@ export async function startServices({
             : {}),
           SERVICE_PORT: String(ports[name] ?? defaults[name]),
           WORKSPACE_URL: services.workspace || "",
+          IDENTITY_URL: services.identity || "",
           SERVICE_URLS: JSON.stringify(services),
           STATIC_ROOT: name === "gateway" ? staticRoot || "" : "",
         },

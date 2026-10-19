@@ -2,7 +2,11 @@ import Fastify from "fastify";
 import rateLimit from "@fastify/rate-limit";
 
 export async function createBase({ logger = false, bodyLimit = 8192 } = {}) {
-  const app = Fastify({ logger, bodyLimit });
+  const app = Fastify({
+    logger,
+    bodyLimit,
+    ajv: { customOptions: { removeAdditional: false } },
+  });
   await app.register(rateLimit, { max: 180, timeWindow: "1 minute" });
   app.addHook("onRequest", async (request, reply) => {
     if (!["127.0.0.1", "localhost", "[::1]"].includes(request.hostname))

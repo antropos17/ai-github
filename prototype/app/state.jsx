@@ -15,6 +15,7 @@ export function WorkspaceProvider({ children }) {
   const [playing, setPlaying] = useState(false);
   const current = useRef(null),
     inFlight = useRef(null),
+    syncFlight = useRef(null),
     anchor = useRef(null);
   const receive = useCallback((next) => {
     const old = current.current;
@@ -28,6 +29,7 @@ export function WorkspaceProvider({ children }) {
       if (node)
         anchor.current = {
           key: node.dataset.event,
+          route: location.hash,
           top: node.getBoundingClientRect().top,
         };
     }
@@ -67,6 +69,20 @@ export function WorkspaceProvider({ children }) {
     },
     [receive],
   );
+  const quietRefresh = useCallback(() => {
+    if (inFlight.current || syncFlight.current) return;
+    const baseline = current.current;
+    syncFlight.current = request("state")
+      .then((next) => {
+        // A background read must never consume a user action or replace a newer run.
+        if (!inFlight.current && current.current === baseline) receive(next);
+      })
+      .catch(() => {})
+      .finally(() => {
+        syncFlight.current = null;
+      });
+    return syncFlight.current;
+  }, [receive]);
   useEffect(() => {
     void perform();
   }, [perform]);
@@ -90,6 +106,7 @@ export function WorkspaceProvider({ children }) {
     if (!anchor.current) return;
     const saved = anchor.current;
     anchor.current = null;
+    if (saved.route !== location.hash) return;
     const node = [...document.querySelectorAll("[data-event]")].find(
       (el) => el.dataset.event === saved.key,
     );
@@ -107,7 +124,8 @@ export function WorkspaceProvider({ children }) {
         error,
         playing,
         setPlaying,
-        refresh: () => perform(),
+        refresh: (silent = false) =>
+          silent === true ? quietRefresh() : perform(),
         advance: () => perform("advance"),
         newRun: () => perform("runs"),
         clearError: () => setError(""),

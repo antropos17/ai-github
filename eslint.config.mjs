@@ -1,5 +1,9 @@
 import js from "@eslint/js";
 import globals from "globals";
+import { builtinModules } from "node:module";
+const nodeImports = [
+  ...new Set(builtinModules.flatMap((name) => [name, `node:${name}`])),
+];
 export default [
   {
     ignores: [
@@ -50,11 +54,77 @@ export default [
   },
   {
     files: ["**/*.mjs", "**/*.js", "**/*.jsx"],
-    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+    languageOptions: { globals: globals.node },
     rules: {
       "no-unused-vars": [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
+      ],
+    },
+  },
+  {
+    files: ["prototype/app/**/*.{jsx,mjs}"],
+    languageOptions: {
+      globals: {
+        ...Object.fromEntries(
+          Object.keys(globals.node).map((name) => [name, "off"]),
+        ),
+        ...globals.browser,
+      },
+    },
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: nodeImports,
+          patterns: [
+            {
+              regex: "(?:^|/)(?:server|services|scripts|tests)/",
+              message:
+                "Browser UI uses the API client or shared pure modules, never server internals.",
+            },
+          ],
+        },
+      ],
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "JSXOpeningElement[name.name='details']",
+          message:
+            "Keep content in visible sections; disclosure arrows violate DESIGN.md.",
+        },
+      ],
+      "no-eval": "error",
+      "no-implied-eval": "error",
+    },
+  },
+  {
+    files: ["tests/browser/**/*.mjs"],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
+    files: ["shared/**/*.mjs", "server/domain/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        ...Object.fromEntries(
+          Object.keys(globals.node).map((name) => [name, "off"]),
+        ),
+        structuredClone: "readonly",
+      },
+    },
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: nodeImports,
+          patterns: [
+            {
+              regex: "(?:^|/)(?:services|prototype)/",
+              message:
+                "Keep domain/shared transformations independent of transport and UI.",
+            },
+          ],
+        },
       ],
     },
   },
