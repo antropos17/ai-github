@@ -86,6 +86,8 @@ export async function simulateCommons(seed = 17, { historyCount = 8 } = {}) {
             message: behavior === "reject" ? "Simulated reviewer requests changes." : "Simulated reviewer approves syntax-only proposal.",
             generalMessage: "Simulated fixture review.",
             approve: behavior !== "reject",
+            findings: [],
+            limitations: ["Simulated review; runtime behavior was not tested."],
           };
       return { text: JSON.stringify(value), model: this.name, elapsedMs: 0, usage: {}, finishReason: "stop" };
     },

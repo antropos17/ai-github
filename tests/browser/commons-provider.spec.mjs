@@ -6,6 +6,7 @@ test("workspace recovers provider health without starting a model task", async (
   page.on("pageerror", (error) => errors.push(error.message));
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/#/commons/safe-timer?view=tasks");
+  await page.getByRole("button", { name: "New task", exact: true }).click();
   const run = page.getByRole("button", { name: "Run agents", exact: true });
   const check = page.getByRole("button", { name: "Check model", exact: true });
   const status = page.locator(".commons-actions .commons-meta[role=status]");

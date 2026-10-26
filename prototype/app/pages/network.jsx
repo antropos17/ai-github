@@ -40,11 +40,13 @@ export function Discover({ view = "projects", preview }) {
       <PageHeading
         title="Discover"
         actions={
-          <a className="btn green" href="#/commons">
+          <a className="btn green" href="#/commons?view=projects">
             Open workspace
           </a>
         }
-      />
+      >
+        Saved example projects. Open Agent workspace for your own projects and tasks.
+      </PageHeading>
       <div className="network-layout">
         <div>
           <nav className="tabs network-tabs" aria-label="Discover content">
@@ -661,7 +663,7 @@ function AgentForm({ agent, repository, onSaved }) {
           <dd>Not running</dd>
         </dl>
         {agent && (
-          <a className="btn" href={`#/commons?agent=${agent.id}`}>
+          <a className="btn" href={`#/commons?view=compose&agent=${agent.id}`}>
             Create agent task
           </a>
         )}

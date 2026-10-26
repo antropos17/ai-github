@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useWorkspace, useAccount } from "../hooks.mjs";
 import { request } from "../api.mjs";
-import { path } from "../router.mjs";
+import { navigateRoute, path } from "../router.mjs";
 import {
   projectHistory,
   numberedPulls,
@@ -62,6 +62,8 @@ function CommonsRoom({
     [error, setError] = useState("");
   const [loading, setLoading] = useState(!data);
   const [connectionError, setConnectionError] = useState("");
+  const [actionEndpoint, setActionEndpoint] = useState("");
+  const [messageSent, setMessageSent] = useState(false);
   const [provider, setProvider] = useState(null),
     [pending, setPending] = useState(false),
     [checkingProvider, setCheckingProvider] = useState(true),
@@ -70,15 +72,19 @@ function CommonsRoom({
     [task, setTask] = useState(
       "Find and fix one concrete edge-case bug. Preserve the public API and explain the change.",
     );
-  const [target, setTarget] = useState(repoId || "safe-timer"),
-    [view, setView] = useState(
+  const [target, setTarget] = useState(repoId || ""),
+    [localView, setView] = useState(
       initialView || (repoId && !embedded ? "code" : "discussion"),
     );
-  const [selectedVersion, setSelectedVersion] = useState(
+  const view = embedded ? localView : initialView || (repoId ? "code" : "discussion");
+  const [localVersion, setSelectedVersion] = useState(
     initialVersion == null ? null : Number(initialVersion),
   );
-  const [focusedPull, setFocusedPull] = useState(initialPullId || "");
-  const [selectedTask, setSelectedTask] = useState(initialTaskId || "");
+  const [localPull, setFocusedPull] = useState(initialPullId || "");
+  const [localTask, setSelectedTask] = useState(initialTaskId || "");
+  const selectedVersion = embedded ? localVersion : initialVersion == null ? null : Number(initialVersion);
+  const focusedPull = embedded ? localPull : initialPullId || "";
+  const selectedTask = embedded ? localTask : initialTaskId || "";
   const [timelineTask, setTimelineTask] = useState("");
   const [sourceMessageId, setSourceMessageId] = useState("");
   const [issueId, setIssueId] = useState("");
@@ -90,24 +96,40 @@ function CommonsRoom({
       new URLSearchParams(location.hash.split("?")[1] || "").get("agent") || "",
   );
   const taskInput = useRef(null);
+  const projectInput = useRef(null);
+  const focusComposer = useRef(false);
+  const composerReturn = useRef({ view: repoId ? "code" : "projects", detail: {} });
   const chatLog = useRef(null);
   const followChat = useRef(true);
+  const chatPosition = useRef(0);
+  const messageRevision = useRef(0);
   const messageAnchor = useRef(null);
   const [messageWindowStart, setMessageWindowStart] = useState(null);
   useLayoutEffect(() => {
     const log = chatLog.current, anchor = messageAnchor.current;
     if (log && anchor) {
-      log.scrollTop = anchor.top + log.scrollHeight - anchor.height;
+      // The last batch also removes its control, changing the log's viewport.
+      log.scrollTop = anchor.top + log.scrollHeight - anchor.height +
+        log.getBoundingClientRect().top - anchor.viewportTop;
+      if (anchor.trigger && !anchor.trigger.isConnected && document.activeElement === document.body)
+        log.focus({ preventScroll: true });
       messageAnchor.current = null;
     }
   }, [messageWindowStart]);
+  useLayoutEffect(() => {
+    if (view === "discussion" && chatLog.current && !followChat.current)
+      chatLog.current.scrollTop = chatPosition.current;
+  }, [view]);
   useEffect(() => {
     const log = chatLog.current;
     if (log && followChat.current) log.scrollTop = log.scrollHeight;
   }, [data?.version, view]);
   useEffect(() => {
-    if (sourceMessageId) taskInput.current?.focus();
-  }, [sourceMessageId]);
+    if (view === "compose" && (embedded || initialView === "compose") && focusComposer.current) {
+      focusComposer.current = false;
+      taskInput.current?.focus({ preventScroll: true });
+    }
+  }, [view, initialView, embedded, sourceMessageId, sourcePrId, issueId]);
   useEffect(() => {
     setView(initialView || (repoId && !embedded ? "code" : "discussion"));
     setSelectedVersion(initialVersion == null ? null : Number(initialVersion));
@@ -125,6 +147,7 @@ function CommonsRoom({
   const alive = useRef(true);
   const providerRequest = useRef(null);
   const providerOrigin = useRef(null);
+  const retryOrigin = useRef(null);
   const latestVersion = useRef(null);
   const receive = useCallback((next) => {
     if (!next) return;
@@ -186,6 +209,14 @@ function CommonsRoom({
     }
   }, []);
   useLayoutEffect(() => {
+    if (loading) return;
+    const origin = retryOrigin.current;
+    retryOrigin.current = null;
+    if (origin && origin.hash === location.hash &&
+        (document.activeElement === document.body || document.activeElement === origin.trigger))
+      (origin.trigger.isConnected ? origin.trigger : document.getElementById("main"))?.focus({ preventScroll: true });
+  }, [loading, data, error]);
+  useLayoutEffect(() => {
     if (checkingProvider) return;
     const origin = providerOrigin.current;
     providerOrigin.current = null;
@@ -220,6 +251,7 @@ function CommonsRoom({
   async function act(endpoint, body, onSuccess) {
     if (!data || pending) return;
     setPending(true);
+    setActionEndpoint(endpoint);
     setError("");
     try {
       const next = await request(`commons/${endpoint}`, {
@@ -247,7 +279,8 @@ function CommonsRoom({
         <button
           className="btn"
           disabled={loading}
-          onClick={() => {
+          onClick={(event) => {
+            retryOrigin.current = { trigger: event.currentTarget, hash: location.hash };
             setError("");
             setConnectionError("");
             void refresh().catch((e) => setError(e.message));
@@ -303,51 +336,76 @@ function CommonsRoom({
         ["changes", `Pull requests (${prs.length})`],
         ["activity", "Timeline"],
       ];
-  const activeView = tabs.some(([id]) => id === view) ? view : tabs[0][0];
+  const activeView = view === "compose" ? "compose" : tabs.some(([id]) => id === view) ? view : tabs[0][0];
   const workingTask =
     activeView === "tasks" && jobs.find((job) => job.id === selectedTask);
   const workingProject =
     workingTask &&
     data.projects.find((project) => project.id === workingTask.repoId);
+  function selectView(next, detail = {}, navigation) {
+    if (embedded) {
+      setView(next);
+      setSelectedVersion(detail.version ?? null);
+      setFocusedPull(detail.pull || "");
+      setSelectedTask(detail.task || "");
+    } else {
+      const query = new URLSearchParams({ view: next });
+      for (const [key, value] of Object.entries(detail))
+        if (value != null && value !== "") query.set(key, String(value));
+      if (agentId) query.set("agent", agentId);
+      navigateRoute(`${path("commons", repoId)}?${query}`, navigation);
+    }
+  }
+  function openComposer() {
+    if (activeView !== "compose") {
+      const detail = activeView === "tasks" ? { task: selectedTask }
+        : activeView === "changes" ? { pull: focusedPull }
+        : activeView === "versions" ? { version: selectedVersion } : {};
+      composerReturn.current = { view: activeView, detail, top: window.scrollY };
+    }
+    focusComposer.current = true;
+    selectView("compose");
+  }
   function revisePull(pr) {
     const original = allJobs.find((job) => job.id === pr.jobId);
     setSourcePrId(pr.id);
     setSourceMessageId(original?.sourceMessageId || "");
     setIssueId(original?.issueId || "");
     setTarget(pr.repoId);
-    taskInput.current?.focus();
+    openComposer();
   }
   function showPull(id) {
-    setFocusedPull(id);
-    setView("changes");
+    selectView("changes", { pull: id });
   }
   function showTask(id) {
-    setSelectedTask(id);
-    setView("tasks");
-    if (!embedded)
-      location.hash = `${path("commons", repoId).slice(1)}?view=tasks&task=${encodeURIComponent(id)}`;
+    selectView("tasks", { task: id });
   }
   function showTaskTimeline(id) {
     setTimelineTask(id);
-    setView("activity");
+    selectView("activity");
   }
   function showVersion(projectId, revision) {
     if (projectId !== repoId) {
       location.hash = `/commons/${encodeURIComponent(projectId)}?view=versions&version=${revision}`;
       return;
     }
-    setSelectedVersion(revision);
-    setView("versions");
+    selectView("versions", { version: revision });
   }
   const Heading = embedded ? "h2" : "h1";
   return (
     <div className="commons" data-view={activeView}>
       <div className={`commons-layout ${embedded ? "commons-embedded" : ""}`}>
         <div className="commons-main">
+          {current && !embedded && (
+            <nav className="commons-meta" aria-label="Project location">
+              <a className="commons-text-button" href="#/commons?view=projects">All projects</a>
+              {" / "}{current.name}
+            </nav>
+          )}
           <div className="commons-heading">
             <div className="commons-project-name">
               {current && <ProjectMark repo={current} jobs={data.jobs} />}
-              <Heading>{current ? current.name : "General"}</Heading>
+              <Heading>{current ? current.name : "Agent workspace"}</Heading>
               {current && (
                 <button
                   className="commons-version"
@@ -357,16 +415,29 @@ function CommonsRoom({
                 </button>
               )}
             </div>
-            <button className="btn" onClick={() => setPaused(!paused)}>
-              {paused ? "Resume updates" : "Pause updates"}
-            </button>
+            {activeView === "compose" ? (
+              <button className="btn" onClick={() => selectView(composerReturn.current.view, composerReturn.current.detail, { scroll: "restore", top: composerReturn.current.top })}>
+                Back to {tabs.find(([id]) => id === composerReturn.current.view)?.[1] || "Projects"}
+              </button>
+            ) : activeView === "projects" ? (
+              <button className="btn" onClick={() => projectInput.current?.focus({ preventScroll: true })}>
+                New project
+              </button>
+            ) : (
+              <button className="btn" disabled={Boolean(current?.archived)} onClick={openComposer}>
+                New task
+              </button>
+            )}
           </div>
           <div className="commons-toolbar">
             <span className="commons-meta" role="status">
-              {paused ? "Paused" : "Live"} · Local model · Syntax checks
+              {paused ? "Updates paused" : "Auto-refresh on"} · Saved local workspace
               {running ? " · Working" : ""}
             </span>
             <div className="commons-actions">
+              <button className="btn" onClick={() => setPaused(!paused)}>
+                {paused ? "Resume updates" : "Pause updates"}
+              </button>
               {current && (
                 <span className="commons-meta">
                   {current.stars.length} stars · {current.forks.length} forks
@@ -398,25 +469,6 @@ function CommonsRoom({
               )}
             </div>
           </div>
-          {!embedded && (
-            <nav className="commons-channels" aria-label="Chat channels">
-              <a href="#/commons" aria-current={!repoId ? "page" : undefined}>
-                General
-              </a>
-              {data.projects.map((p) => (
-                <div className="commons-channel" key={p.id}>
-                  <ProjectMark repo={p} jobs={data.jobs} />
-                  <a
-                    href={path("commons", p.id)}
-                    aria-current={repoId === p.id ? "page" : undefined}
-                  >
-                    <span>{p.name}</span>
-                    <small>v{p.revision}</small>
-                  </a>
-                </div>
-              ))}
-            </nav>
-          )}
           <div
             className="commons-views"
             role="group"
@@ -426,14 +478,14 @@ function CommonsRoom({
               <button
                 className="btn"
                 key={id}
-                aria-pressed={activeView === id}
-                onClick={() => setView(id)}
+                aria-pressed={activeView === id || (activeView === "compose" && id === "tasks")}
+                onClick={() => selectView(id)}
               >
                 {label}
               </button>
             ))}
           </div>
-          {error && (
+          {error && !(actionEndpoint === "messages" && activeView === "discussion") && (
             <p className="inline-error" role="alert">
               {error}
             </p>
@@ -448,389 +500,19 @@ function CommonsRoom({
               Archived project. History and exports remain available.
             </p>
           )}
-          <div className="commons-workbench">
+          <div className="commons-workbench" style={embedded ? undefined : { minHeight: "100vh" }}>
             <div className="commons-content">
-              {activeView === "projects" && (
-                <Projects projects={data.projects} jobs={data.jobs} />
-              )}
-              {activeView === "issues" && current && (
-                <Issues
-                  project={current}
-                  events={events}
-                  jobs={allJobs}
-                  pending={pending}
-                  act={act}
-                  onTask={(issue) => {
-                    setIssueId(issue.id);
-                    setSourcePrId("");
-                    setTarget(current.id);
-                    setTask(`Investigate and resolve issue #${issue.number}: ${issue.title}`);
-                    taskInput.current?.focus();
-                  }}
-                />
-              )}
-              {activeView === "code" && current && (
-                <>
-                  <CodeFiles
-                    files={current.files}
-                    label={`v${current.revision}`}
-                  />
-                  <div className="commons-actions">
-                    <a
-                      className="btn"
-                      href={`/api/commons/projects/${encodeURIComponent(current.id)}/export?runId=${runId}`}
-                      download
-                    >
-                      Export project
-                    </a>
-                    <a
-                      className="btn"
-                      href={`/api/commons/projects/${encodeURIComponent(current.id)}/git?runId=${runId}`}
-                      download
-                    >
-                      Export Git history
-                    </a>
-                    <button
-                      className="btn"
-                      disabled={pending || Boolean(running)}
-                      onClick={() =>
-                        act("project-state", {
-                          repoId,
-                          archived: !current.archived,
-                        })
-                      }
-                    >
-                      {current.archived ? "Restore project" : "Archive project"}
-                    </button>
-                  </div>
-                  {current.origin && (
-                    <p className="commons-meta">
-                      Forked from{" "}
-                      <a href={path("commons", current.origin.repoId)}>
-                        {current.origin.repoId}
-                      </a>{" "}
-                      at v{current.origin.revision}
-                    </p>
-                  )}
-                </>
-              )}
-              {activeView === "forks" && current && (
-                <Forks forks={current.forks} />
-              )}
-              {activeView === "versions" && current && (
-                <Versions
-                  history={history}
-                  selected={selectedVersion}
-                  onSelect={setSelectedVersion}
-                  onPull={showPull}
-                />
-              )}
-              {activeView === "changes" && (
-                <>
-                  {!focusedPull && prs.length > 0 && (
-                    <nav
-                      className="commons-record-picker"
-                      aria-label="Pull requests"
-                    >
-                      {prs.map((pr) => (
-                        <button
-                          className="btn"
-                          key={pr.id}
-                          onClick={() => showPull(pr.id)}
-                          aria-pressed={pr.id === prs[0].id}
-                        >
-                          <strong>
-                            #{pr.number} {pr.title}
-                          </strong>
-                          <span>
-                            {pr.repoId} · {pr.status}
-                          </span>
-                        </button>
-                      ))}
-                    </nav>
-                  )}
-                  {focusedPull && (
-                    <p className="commons-meta">
-                      <a
-                        href={`${path("commons", repoId)}?view=changes`}
-                        onClick={() => setFocusedPull("")}
-                      >
-                        All pull requests
-                      </a>
-                    </p>
-                  )}
-                  {focusedPull &&
-                  !prs.some((pull) => pull.id === focusedPull) ? (
-                    <p role="status">Pull request not found in this project.</p>
-                  ) : (
-                    <PullChanges
-                      prs={
-                        focusedPull
-                          ? prs.filter((pull) => pull.id === focusedPull)
-                          : prs.slice(0, 1)
-                      }
-                      pending={pending}
-                      act={act}
-                      focusedId={focusedPull}
-                      onVersion={showVersion}
-                      jobs={allJobs}
-                      onTask={showTask}
-                      events={events}
-                      onRevise={revisePull}
-                    />
-                  )}
-                </>
-              )}
-              {activeView === "tasks" && (
-                <>
-                  {selectedTask && (
-                    <button
-                      className="commons-text-button"
-                      onClick={() => {
-                        setSelectedTask("");
-                        if (!embedded)
-                          location.hash = `${path("commons", repoId).slice(1)}?view=tasks`;
-                      }}
-                    >
-                      All tasks
-                    </button>
-                  )}
-                  {workingTask?.pull && (
-                    <PullChanges
-                      prs={[workingTask.pull]}
-                      pending={pending}
-                      act={act}
-                      onVersion={showVersion}
-                      events={data.events}
-                      onRevise={revisePull}
-                    />
-                  )}
-                  <Tasks
-                    jobs={jobs.filter(
-                      (job) => !selectedTask || job.id === selectedTask,
-                    )}
-                    onPull={showPull}
-                    onTimeline={showTaskTimeline}
-                    onVersion={showVersion}
-                    onOpen={showTask}
-                    focused={Boolean(selectedTask)}
-                  />
-                  {selectedTask && !workingTask && (
-                    <p role="status">Task not found in this project.</p>
-                  )}
-                </>
-              )}
-              {activeView === "activity" && (
-                <>
-                  {activeTask && (
-                    <>
-                      <div className="commons-actions">
-                        <strong>Task #{activeTask.number}</strong>
-                        <button
-                          className="commons-text-button"
-                          onClick={() => showTask(activeTask.id)}
-                        >
-                          View task
-                        </button>
-                        <button
-                          className="commons-text-button"
-                          onClick={() => setTimelineTask("")}
-                        >
-                          All activity
-                        </button>
-                      </div>
-                      <SourceMessage event={activeTask.sourceMessage} />
-                    </>
-                  )}
-                  {current && !embedded && !activeTask ? (
-                    <LocalProjectTimeline
-                      project={current}
-                      jobs={data.jobs}
-                      events={data.events}
-                      offline={connectionError}
-                      paused={paused}
-                    />
-                  ) : (
-                    <Activity
-                      events={activeTask ? activeTask.events : events}
-                      pulls={allPulls}
-                      onPull={showPull}
-                      onVersion={showVersion}
-                    />
-                  )}
-                </>
-              )}
-              {activeView === "discussion" && (
-                <section className="commons-chat" aria-label="Chat">
-                  {messages.length > 40 && (
-                    <div className="commons-history-controls">
-                      <span className="small muted" role="status">
-                        Showing {visibleMessages.length} of {messages.length} saved messages
-                      </span>
-                      {messageStart > 0 && (
-                        <button className="commons-text-button" onClick={() => {
-                          const log = chatLog.current;
-                          messageAnchor.current = { top: log.scrollTop, height: log.scrollHeight };
-                          followChat.current = false;
-                          setMessageWindowStart(messages[Math.max(0, messageStart - 40)].id);
-                        }}>
-                          Show {Math.min(40, messageStart)} earlier messages
-                        </button>
-                      )}
-                    </div>
-                  )}
-                  <div
-                    className="commons-messages"
-                    role="region"
-                    tabIndex={0}
-                    aria-label="Saved messages"
-                    ref={chatLog}
-                    onScroll={(event) => {
-                      const log = event.currentTarget;
-                      followChat.current =
-                        log.scrollHeight - log.scrollTop - log.clientHeight <
-                        48;
-                      if (!followChat.current && messageWindowStart === null && visibleMessages.length)
-                        setMessageWindowStart(visibleMessages[0].id);
-                    }}
-                  >
-                    {!messages.length && (
-                      <p className="commons-empty">No messages yet.</p>
-                    )}
-                    {visibleMessages.map((event) => (
-                      <article key={event.id} className="commons-message">
-                        <div className="commons-byline">
-                          <strong>
-                            {event.actorName || actorNames[event.actor]}
-                          </strong>
-                          <span>{event.inference ? "Model" : "Operator"}</span>
-                          <RecordedTime at={event.at} />
-                        </div>
-                        <p>{event.text}</p>
-                        <div className="commons-actions">
-                          <button
-                            className="commons-text-button"
-                            disabled={pending}
-                            onClick={() => {
-                              setSourceMessageId(event.id);
-                              if (!repoId && event.projectId)
-                                setTarget(event.projectId);
-                              if (sourceMessageId === event.id)
-                                taskInput.current?.focus();
-                            }}
-                          >
-                            Create task
-                          </button>
-                          {allJobs.some((job) => job.id === event.jobId) && (
-                            <button
-                              className="commons-text-button"
-                              onClick={() => showTask(event.jobId)}
-                            >
-                              Task #
-                              {
-                                allJobs.find((job) => job.id === event.jobId)
-                                  .number
-                              }
-                            </button>
-                          )}
-                          {event.prId && (
-                            <button
-                              className="commons-text-button"
-                              onClick={() => showPull(event.prId)}
-                            >
-                              PR #
-                              {
-                                allPulls.find((p) => p.id === event.prId)
-                                  ?.number
-                              }
-                            </button>
-                          )}
-                          {allJobs
-                            .filter((job) => job.sourceMessageId === event.id)
-                            .map((job) => (
-                              <button
-                                key={job.id}
-                                className="commons-text-button"
-                                onClick={() => showTask(job.id)}
-                              >
-                                Task #{job.number}
-                              </button>
-                            ))}
-                        </div>
-                      </article>
-                    ))}
-                  </div>
-                  <form
-                    className="commons-compose"
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      act("messages", { repoId, message: draft }, () =>
-                        setDraft(""),
-                      );
-                    }}
-                  >
-                    <label htmlFor="commons-message">Message</label>
-                    <textarea
-                      id="commons-message"
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      maxLength={2000}
-                      rows={3}
-                      placeholder="Write a message…"
-                    />
-                    <div>
-                      <span className="commons-meta">Local operator</span>
-                      <button
-                        className="btn"
-                        disabled={pending || !draft.trim()}
-                      >
-                        Send
-                      </button>
-                    </div>
-                  </form>
-                </section>
-              )}
-              {current && !embedded && activeView === "code" && (
-                <LocalProjectTimeline
-                  project={current}
-                  jobs={data.jobs}
-                  events={data.events}
-                  offline={connectionError}
-                  paused={paused}
-                />
-              )}
-            </div>
-            <aside
-              className="commons-support"
-              aria-label="Project actions and contributors"
-            >
-              {workingProject && (
-                <LocalProjectTimeline
-                  key={workingTask.id}
-                  project={workingProject}
-                  jobs={data.jobs}
-                  events={data.events}
-                  taskId={workingTask.id}
-                  offline={connectionError}
-                  paused={paused}
-                />
-              )}
-              {activeView === "projects" && (
-                <ProjectForm pending={pending} act={act} />
-              )}
-              {activeView === "forks" && current && (
-                <ProjectForm source={current} pending={pending} act={act} />
-              )}
               <section
                 className="commons-start"
                 aria-label="New task"
-                hidden={activeView === "projects" || activeView === "forks"}
+                hidden={activeView !== "compose"}
               >
                 <h2>New task</h2>
+                <p className="commons-meta">Describe a change, run agents, then review the PR before merging.</p>
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
-                    if (agentId && !agentReady) return;
+                    if (!target || (agentId && !agentReady)) return;
                     act(
                       "jobs",
                       {
@@ -860,6 +542,7 @@ function CommonsRoom({
                       <label htmlFor="commons-project">Project</label>
                       <select
                         id="commons-project"
+                        required
                         value={target}
                         onChange={(e) => {
                           setTarget(e.target.value);
@@ -868,14 +551,25 @@ function CommonsRoom({
                           setSourceMessageId("");
                         }}
                       >
+                        <option value="" disabled>Select a project</option>
                         {data.projects.map((p) => (
-                          <option key={p.id} value={p.id}>
+                          <option key={p.id} value={p.id} disabled={p.archived}>
                             {p.name}
                           </option>
                         ))}
                       </select>
                     </>
                   )}
+                  {current && <p className="commons-meta">Project: <strong>{current.name}</strong></p>}
+                  <label htmlFor="commons-task">Task</label>
+                  <textarea
+                    id="commons-task"
+                    ref={taskInput}
+                    rows={3}
+                    maxLength={1000}
+                    value={task}
+                    onChange={(e) => setTask(e.target.value)}
+                  />
                   <label htmlFor="commons-agent">Agent</label>
                   <select
                     id="commons-agent"
@@ -962,15 +656,6 @@ function CommonsRoom({
                       </button>
                     </>
                   )}
-                  <label htmlFor="commons-task">Task</label>
-                  <textarea
-                    id="commons-task"
-                    ref={taskInput}
-                    rows={3}
-                    maxLength={1000}
-                    value={task}
-                    onChange={(e) => setTask(e.target.value)}
-                  />
                   <div
                     className="commons-actions"
                     role="group"
@@ -986,6 +671,7 @@ function CommonsRoom({
                         Boolean(provider?.busy) ||
                         provider?.available !== true ||
                         !task.trim() ||
+                        !target ||
                         Boolean(current?.archived) ||
                         Boolean(agentId && !agentReady)
                       }
@@ -1014,6 +700,400 @@ function CommonsRoom({
                   </div>
                 </form>
               </section>
+              {activeView === "projects" && (
+                <Projects projects={data.projects} jobs={data.jobs} />
+              )}
+              {activeView === "issues" && current && (
+                <Issues
+                  project={current}
+                  events={events}
+                  jobs={allJobs}
+                  pending={pending}
+                  act={act}
+                  onTask={(issue) => {
+                    setIssueId(issue.id);
+                    setSourceMessageId("");
+                    setSourcePrId("");
+                    setTarget(current.id);
+                    setTask(`Investigate and resolve issue #${issue.number}: ${issue.title}`);
+                    openComposer();
+                  }}
+                />
+              )}
+              {activeView === "code" && current && (
+                <>
+                  <CodeFiles
+                    files={current.files}
+                    label={`v${current.revision}`}
+                  />
+                  <div className="commons-actions">
+                    <a
+                      className="btn"
+                      href={`/api/commons/projects/${encodeURIComponent(current.id)}/export?runId=${runId}`}
+                      download
+                    >
+                      Export project
+                    </a>
+                    <a
+                      className="btn"
+                      href={`/api/commons/projects/${encodeURIComponent(current.id)}/git?runId=${runId}`}
+                      download
+                    >
+                      Export Git history
+                    </a>
+                    <button
+                      className="btn"
+                      disabled={pending || Boolean(running)}
+                      onClick={() =>
+                        act("project-state", {
+                          repoId,
+                          archived: !current.archived,
+                        })
+                      }
+                    >
+                      {current.archived ? "Restore project" : "Archive project"}
+                    </button>
+                  </div>
+                  {current.origin && (
+                    <p className="commons-meta">
+                      Forked from{" "}
+                      <a href={path("commons", current.origin.repoId)}>
+                        {current.origin.repoId}
+                      </a>{" "}
+                      at v{current.origin.revision}
+                    </p>
+                  )}
+                </>
+              )}
+              {activeView === "forks" && current && (
+                <Forks forks={current.forks} />
+              )}
+              {activeView === "versions" && current && (
+                <Versions
+                  history={history}
+                  selected={selectedVersion}
+                  onSelect={(revision) => showVersion(repoId, revision)}
+                  onPull={showPull}
+                />
+              )}
+              {activeView === "changes" && (
+                <>
+                  {!focusedPull && prs.length > 0 && (
+                    <nav
+                      className="commons-record-picker"
+                      aria-label="Pull requests"
+                    >
+                      {prs.map((pr) => (
+                        <button
+                          className="btn"
+                          key={pr.id}
+                          onClick={() => showPull(pr.id)}
+                          aria-pressed={pr.id === prs[0].id}
+                        >
+                          <strong>
+                            #{pr.number} {pr.title}
+                          </strong>
+                          <span>
+                            {pr.repoId} · {pr.status}
+                          </span>
+                        </button>
+                      ))}
+                    </nav>
+                  )}
+                  {focusedPull && (
+                    <p className="commons-meta">
+                      <a
+                        href={`${path("commons", repoId)}?view=changes`}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          selectView("changes");
+                        }}
+                      >
+                        All pull requests
+                      </a>
+                    </p>
+                  )}
+                  {focusedPull &&
+                  !prs.some((pull) => pull.id === focusedPull) ? (
+                    <p role="status">Pull request not found in this project.</p>
+                  ) : (
+                    <PullChanges
+                      prs={
+                        focusedPull
+                          ? prs.filter((pull) => pull.id === focusedPull)
+                          : prs.slice(0, 1)
+                      }
+                      pending={pending}
+                      act={act}
+                      focusedId={focusedPull}
+                      onVersion={showVersion}
+                      jobs={allJobs}
+                      onTask={showTask}
+                      events={events}
+                      onRevise={revisePull}
+                    />
+                  )}
+                </>
+              )}
+              {activeView === "tasks" && (
+                <>
+                  {selectedTask && (
+                    <button
+                      className="commons-text-button"
+                      onClick={() => selectView("tasks")}
+                    >
+                      All tasks
+                    </button>
+                  )}
+                  {workingTask?.pull && (
+                    <PullChanges
+                      prs={[workingTask.pull]}
+                      pending={pending}
+                      act={act}
+                      onVersion={showVersion}
+                      events={data.events}
+                      onRevise={revisePull}
+                    />
+                  )}
+                  <Tasks
+                    jobs={jobs.filter(
+                      (job) => !selectedTask || job.id === selectedTask,
+                    )}
+                    onPull={showPull}
+                    onTimeline={showTaskTimeline}
+                    onVersion={showVersion}
+                    onOpen={showTask}
+                    onCreate={current?.archived ? undefined : openComposer}
+                    focused={Boolean(selectedTask)}
+                  />
+                  {selectedTask && !workingTask && (
+                    <p role="status">Task not found in this project.</p>
+                  )}
+                </>
+              )}
+              {activeView === "activity" && (
+                <>
+                  {activeTask && (
+                    <>
+                      <div className="commons-actions">
+                        <strong>Task #{activeTask.number}</strong>
+                        <button
+                          className="commons-text-button"
+                          onClick={() => showTask(activeTask.id)}
+                        >
+                          View task
+                        </button>
+                        <button
+                          className="commons-text-button"
+                          onClick={() => setTimelineTask("")}
+                        >
+                          All activity
+                        </button>
+                      </div>
+                      <SourceMessage event={activeTask.sourceMessage} />
+                    </>
+                  )}
+                  {current && !embedded && !activeTask ? (
+                    <LocalProjectTimeline
+                      project={current}
+                      jobs={data.jobs}
+                      events={data.events}
+                      offline={connectionError}
+                      paused={paused}
+                    />
+                  ) : (
+                    <Activity
+                      events={activeTask ? activeTask.events : events}
+                      pulls={allPulls}
+                      onPull={showPull}
+                      onVersion={showVersion}
+                    />
+                  )}
+                </>
+              )}
+              {activeView === "discussion" && (
+                <section className="commons-chat" aria-label="Chat">
+                  {messages.length > 40 && (
+                    <div className="commons-history-controls">
+                      <span className="small muted" role="status">
+                        Showing {visibleMessages.length} of {messages.length} saved messages
+                      </span>
+                      {messageStart > 0 && (
+                        <button className="commons-text-button" onClick={(event) => {
+                          const log = chatLog.current;
+                          messageAnchor.current = {
+                            top: log.scrollTop, height: log.scrollHeight,
+                            viewportTop: log.getBoundingClientRect().top,
+                            trigger: document.activeElement === event.currentTarget ? event.currentTarget : null,
+                          };
+                          followChat.current = false;
+                          setMessageWindowStart(messages[Math.max(0, messageStart - 40)].id);
+                        }}>
+                          Show {Math.min(40, messageStart)} earlier messages
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  <div
+                    className="commons-messages"
+                    role="region"
+                    tabIndex={0}
+                    aria-label="Saved messages"
+                    ref={chatLog}
+                    onScroll={(event) => {
+                      const log = event.currentTarget;
+                      chatPosition.current = log.scrollTop;
+                      followChat.current =
+                        log.scrollHeight - log.scrollTop - log.clientHeight <
+                        48;
+                      if (!followChat.current && messageWindowStart === null && visibleMessages.length)
+                        setMessageWindowStart(visibleMessages[0].id);
+                    }}
+                  >
+                    {!messages.length && (
+                      <p className="commons-empty">No messages yet.</p>
+                    )}
+                    {visibleMessages.map((event) => (
+                      <article key={event.id} className="commons-message">
+                        <div className="commons-byline">
+                          <strong>
+                            {event.actorName || actorNames[event.actor]}
+                          </strong>
+                          <span>{event.inference ? "Model" : "Operator"}</span>
+                          <RecordedTime at={event.at} />
+                        </div>
+                        <p>{event.text}</p>
+                        <div className="commons-actions">
+                          <button
+                            className="commons-text-button"
+                            disabled={pending}
+                            onClick={() => {
+                              setSourceMessageId(event.id);
+                              setIssueId("");
+                              setSourcePrId("");
+                              if (!repoId && event.projectId)
+                                setTarget(event.projectId);
+                              openComposer();
+                            }}
+                          >
+                            Create task
+                          </button>
+                          {allJobs.some((job) => job.id === event.jobId) && (
+                            <button
+                              className="commons-text-button"
+                              onClick={() => showTask(event.jobId)}
+                            >
+                              Task #
+                              {
+                                allJobs.find((job) => job.id === event.jobId)
+                                  .number
+                              }
+                            </button>
+                          )}
+                          {event.prId && (
+                            <button
+                              className="commons-text-button"
+                              onClick={() => showPull(event.prId)}
+                            >
+                              PR #
+                              {
+                                allPulls.find((p) => p.id === event.prId)
+                                  ?.number
+                              }
+                            </button>
+                          )}
+                          {allJobs
+                            .filter((job) => job.sourceMessageId === event.id)
+                            .map((job) => (
+                              <button
+                                key={job.id}
+                                className="commons-text-button"
+                                onClick={() => showTask(job.id)}
+                              >
+                                Task #{job.number}
+                              </button>
+                            ))}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <form
+                    className="commons-compose"
+                    aria-label="Send message"
+                    aria-busy={pending && actionEndpoint === "messages"}
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (pending || !draft.trim()) return;
+                      const submittedRevision = messageRevision.current;
+                      setMessageSent(false);
+                      act("messages", { repoId, message: draft }, () => {
+                        if (messageRevision.current === submittedRevision) setDraft("");
+                        setMessageSent(true);
+                      });
+                    }}
+                  >
+                    <label htmlFor="commons-message">Message</label>
+                    <textarea
+                      id="commons-message"
+                      value={draft}
+                      onChange={(e) => {
+                        messageRevision.current++;
+                        setMessageSent(false);
+                        setDraft(e.target.value);
+                      }}
+                      aria-describedby={error && actionEndpoint === "messages" ? "commons-message-error" : undefined}
+                      maxLength={2000}
+                      rows={3}
+                      placeholder="Write a message…"
+                    />
+                    {error && actionEndpoint === "messages" && (
+                      <p id="commons-message-error" className="inline-error" role="alert">{error}</p>
+                    )}
+                    <div>
+                      <span className="commons-meta" role="status">
+                        {pending && actionEndpoint === "messages" ? "Sending message…" : messageSent ? "Message sent · Local operator" : "Local operator"}
+                      </span>
+                      <button
+                        className="btn"
+                        disabled={pending || !draft.trim()}
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </form>
+                </section>
+              )}
+              {current && !embedded && activeView === "code" && (
+                <LocalProjectTimeline
+                  project={current}
+                  jobs={data.jobs}
+                  events={data.events}
+                  offline={connectionError}
+                  paused={paused}
+                />
+              )}
+            </div>
+            <aside
+              className="commons-support"
+              aria-label="Project actions and contributors"
+            >
+              {workingProject && (
+                <LocalProjectTimeline
+                  key={workingTask.id}
+                  project={workingProject}
+                  jobs={data.jobs}
+                  events={data.events}
+                  taskId={workingTask.id}
+                  offline={connectionError}
+                  paused={paused}
+                />
+              )}
+              {activeView === "projects" && (
+                <ProjectForm pending={pending} act={act} addressRef={projectInput} />
+              )}
+              {activeView === "forks" && current && (
+                <ProjectForm source={current} pending={pending} act={act} />
+              )}
               {current && !embedded && (
                 <ProjectContributions project={current} jobs={data.jobs} />
               )}

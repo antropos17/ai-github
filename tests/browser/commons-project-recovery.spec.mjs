@@ -1,13 +1,16 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("duplicate project address retains the form and can recover", async ({ page }) => {
+test("duplicate project address recovers and the created project is findable by address", async ({ page }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto("/#/commons");
   await page.getByRole("group", { name: "Project sections" })
     .getByRole("button", { name: "Projects", exact: true }).click();
   const form = page.getByRole("region", { name: "New project" });
+  await expect(form.getByLabel("Project address")).toHaveAccessibleDescription(
+    "2–48 characters. Start with a lowercase letter; use lowercase letters, numbers, or hyphens. This becomes the project's address.",
+  );
   await form.getByLabel("Project address").fill("safe-timer");
   await form.getByLabel("Project name").fill("Collision fixture");
   await form.getByLabel("Description").fill("A disposable duplicate-address recovery case.");
@@ -25,6 +28,27 @@ test("duplicate project address retains the form and can recover", async ({ page
   const accessibility = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(accessibility.violations).toEqual([]);
+  await page.goto("/#/commons?view=projects");
+  const filters = page.getByRole("search", { name: "Projects", exact: true });
+  const search = filters.getByRole("searchbox", { name: "Find a project" });
+  const type = filters.getByRole("combobox", { name: "Type", exact: true });
+  const projects = page.getByRole("list", { name: "Workspace projects" });
+  const clear = page.getByRole("button", { name: "Clear filters", exact: true });
+  await expect(projects.getByRole("link", { name: "Collision fixture", exact: true })).toBeVisible();
+  const count = await projects.getByRole("listitem").count();
+  await expect(clear).toBeDisabled();
+  await search.fill("  BROWSER-PROJECT-RETRY  ");
+  await expect(projects.getByRole("listitem")).toHaveCount(1);
+  await expect(projects.getByRole("link", { name: "Collision fixture", exact: true })).toBeVisible();
+  await type.selectOption("game");
+  await expect(projects.getByRole("listitem")).toHaveCount(0);
+  await expect(page.getByText("No projects match these filters. Change your search or clear the filters.")).toBeVisible();
+  await clear.click();
+  await expect(search).toBeFocused();
+  await expect(search).toHaveValue("");
+  await expect(type).toHaveValue("all");
+  await expect(projects.getByRole("listitem")).toHaveCount(count);
+  await expect(clear).toBeDisabled();
   expect(errors).toEqual([]);
 });
 

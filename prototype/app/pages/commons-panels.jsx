@@ -144,6 +144,69 @@ export function Versions({ history, selected, onSelect, onPull }) {
     </div>
   );
 }
+function ReviewFindings({ pr }) {
+  const { findings, limitations } = pr.review;
+  if (!Array.isArray(findings)) return null;
+  return (
+    <section className="commons-thread" aria-label="Reviewer findings">
+      <h3>Review findings</h3>
+      {!findings.length && <p>No concrete defects identified.</p>}
+      {findings.map((finding, index) => {
+        const side = finding.side === "before" ? "Before" : "After";
+        const source = pr[finding.side];
+        const sourceLine =
+          finding.path === pr.path &&
+          ["before", "after"].includes(finding.side) &&
+          Number.isInteger(finding.line) &&
+          finding.line > 0 &&
+          typeof source === "string"
+            ? source.split(/\r\n|\r|\n/)[finding.line - 1]
+            : undefined;
+        return (
+          <article key={index} aria-label={`Finding ${index + 1}`}>
+            <p>
+              <strong>Bug:</strong> {finding.bug}
+            </p>
+            <p className="commons-meta">
+              <code>
+                {finding.path}:{finding.line}
+              </code>{" "}
+              · {side} change
+            </p>
+            {sourceLine !== undefined && (
+              <pre
+                role="region"
+                tabIndex={0}
+                aria-label={`Finding ${index + 1} source: ${side} ${finding.path}:${finding.line}`}
+              >
+                <code>{sourceLine}</code>
+              </pre>
+            )}
+            <p>
+              <strong>Evidence:</strong> {finding.evidence}
+            </p>
+            <p>
+              <strong>Consequence:</strong> {finding.consequence}
+            </p>
+            <p>
+              <strong>Minimal fix:</strong> {finding.fix}
+            </p>
+          </article>
+        );
+      })}
+      {Array.isArray(limitations) && limitations.length > 0 && (
+        <section aria-label="Review limitations">
+          <h3>Limitations</h3>
+          <ul>
+            {limitations.map((limitation, index) => (
+              <li key={index}>{limitation}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </section>
+  );
+}
 export function PullChanges({
   prs,
   pending,
@@ -189,9 +252,12 @@ export function PullChanges({
               </div>
             ))}
           {pr.review && (
-            <p>
-              <strong>Reviewer:</strong> {pr.review.message}
-            </p>
+            <>
+              <p>
+                <strong>Reviewer:</strong> {pr.review.message}
+              </p>
+              <ReviewFindings pr={pr} />
+            </>
           )}
           <div className="commons-actions">
             {pr.status === "merged" ? (
@@ -241,13 +307,13 @@ export function PullChanges({
             <section>
               <h3>Before</h3>
               <pre role="region" tabIndex={0} aria-label="Source before change">
-                {pr.before}
+                {pr.before?.replace(/\r\n?/g, "\n")}
               </pre>
             </section>
             <section>
               <h3>After</h3>
               <pre role="region" tabIndex={0} aria-label="Source after change">
-                {pr.after}
+                {pr.after?.replace(/\r\n?/g, "\n")}
               </pre>
             </section>
           </div>

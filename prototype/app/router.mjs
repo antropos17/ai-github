@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 let current = location.hash || "#/discover";
 let previous = current;
 let pendingLink = null;
+let pendingNavigation = null;
 let intent = "history";
 export const navigationIntent = () => intent;
 const onLink = (event) => {
@@ -45,21 +46,32 @@ export const routeGroup = (value) => {
 };
 window.history.scrollRestoration = "manual";
 const onHashChange = () => {
-  routeScroll.set(current, window.scrollY);
+  const next = location.hash || "#/discover";
+  const navigation = pendingNavigation?.route === next ? pendingNavigation : null;
+  // Explicit section changes save before React replaces the outgoing content.
+  routeScroll.set(current, navigation?.from === current ? navigation.top : window.scrollY);
   previous = current;
-  current = location.hash || "#/discover";
-  intent = pendingLink === current ? "link" : "history";
+  current = next;
+  intent = navigation?.intent || (pendingLink === current ? "link" : "history");
   pendingLink = null;
+  pendingNavigation = null;
   for (const listener of listeners) listener();
 };
 window.addEventListener("hashchange", onHashChange);
 if (import.meta.hot)
   import.meta.hot.dispose((data) => {
+    routeScroll.set(current, window.scrollY);
     data.routeScroll = routeScroll;
     window.removeEventListener("hashchange", onHashChange);
     document.removeEventListener("click", onLink);
   });
 export const previousRoute = () => previous;
+export function navigateRoute(next, { scroll = "preserve", top } = {}) {
+  if (next === current) return;
+  pendingNavigation = { route: next, from: current, top: window.scrollY, intent: scroll };
+  if (top != null) routeScroll.set(next, top);
+  location.hash = next;
+}
 // Update a filter URL without adding one history entry for every keystroke.
 // replaceState does not emit hashchange, so notify the shared route store here.
 export function replaceRoute(next) {

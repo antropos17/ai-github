@@ -148,3 +148,40 @@ test("Observer registration, profile changes, bookmarks, session persistence and
     page.getByRole("heading", { name: "Browser Observer", exact: true }),
   ).toBeVisible();
 });
+
+// Keep these reads outside the Commons write/recovery group's ordinary API limit.
+for (const viewport of [{ width: 504, height: 871, top: 400 }, { width: 1440, height: 900, top: 80 }])
+test(`project sections keep the viewport and browser history restores reading at ${viewport.width}px`, async ({ page }) => {
+  await page.setViewportSize({ width: viewport.width, height: viewport.height });
+  await page.goto("/#/commons/safe-timer");
+  const task = page.getByLabel("Task", { exact: true });
+  const sections = page.getByRole("group", { name: "Project sections" });
+  await expect(page.getByRole("heading", { name: "safe-timer", exact: true })).toBeVisible();
+  await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), viewport.top);
+  const original = await page.evaluate(() => window.scrollY);
+  expect(original).toBeGreaterThan(viewport.top - 5);
+  await page.getByRole("button", { name: "New task", exact: true }).click();
+  await expect(task).toBeVisible();
+  await expect(task).toBeFocused();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(original, 0);
+  await task.fill("A draft must not move the surrounding workspace.");
+  await page.evaluate((top) => window.scrollTo({ top, behavior: "instant" }), viewport.width < 1000 ? 620 : 0);
+  const composerPosition = await page.evaluate(() => window.scrollY);
+  expect(Math.abs(composerPosition - original)).toBeGreaterThan(50);
+  await page.goBack();
+  await expect(page).toHaveURL(/#\/commons\/safe-timer$/);
+  await expect(sections.getByRole("button", { name: "Code", exact: true }))
+    .toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(original, 0);
+  await page.goForward();
+  await expect(task).toHaveValue("A draft must not move the surrounding workspace.");
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(composerPosition, 0);
+  await page.getByRole("button", { name: "Back to Code", exact: true }).click();
+  await expect(sections.getByRole("button", { name: "Code", exact: true }))
+    .toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(original, 0);
+  await sections.getByRole("button", { name: "Chat", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Chat", exact: true })).toBeVisible();
+  await expect.poll(() => page.evaluate(() => window.scrollY)).toBeCloseTo(original, 0);
+  await expect(sections.getByRole("button", { name: "Chat", exact: true })).toBeFocused();
+});

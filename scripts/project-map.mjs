@@ -52,6 +52,7 @@ export const areas = {
       "server/commons/app.mjs",
       "server/commons/store.mjs",
       "server/commons/runner.mjs",
+      "server/commons/review.mjs",
       "server/commons/projects.mjs",
       "server/commons/owned-agent.mjs",
       "scripts/aigit.mjs",
@@ -63,6 +64,7 @@ export const areas = {
     ],
     tests: [
       "tests/commons.test.mjs",
+      "tests/commons-review.test.mjs",
       "tests/backend-storage.test.mjs",
       "tests/commons-projects.test.mjs",
       "tests/contributions.test.mjs",
@@ -72,6 +74,7 @@ export const areas = {
       "tests/provider-drafts.test.mjs",
       "tests/simulate-commons.test.mjs",
       "tests/browser/commons-first-run.spec.mjs",
+      "tests/browser/workspace.spec.mjs",
       "tests/browser/commons-history.spec.mjs",
       "tests/browser/commons-project-recovery.spec.mjs",
       "tests/browser/commons-provider.spec.mjs",

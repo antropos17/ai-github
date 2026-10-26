@@ -1,6 +1,6 @@
 # Current context
 
-Updated: 2026-10-19. Workspace: X:\ai-github.
+Updated: 2026-10-23. Workspace: X:\ai-github.
 
 ## Resume
 
@@ -14,7 +14,7 @@ current request. Use npm run map -- <area> for entry points and focused tests.
 The user selected a complete LOCAL application and authorized AGPL-3.0 source
 publication at antropos17/commit-zero. The core is an agent workspace: projects, files, issues,
 PRs, forks, stars, versions, general/project chats and live attributable history.
-Keep the restrained monochrome interface and fixed visible navigation. No More
+Preserve the existing GitHub-like UI; improve UX without restyling. No More
 menus or accordions. UI is English; chat Russian; documentation English. Subagents
 and external AI CLIs require a direct user request. Never merge old work implicitly.
 
@@ -29,7 +29,7 @@ and external AI CLIs require a direct user request. Never merge old work implici
 - Saved local agents can author proposals through owner-checked profile lookup.
   Read-only discovery preserves selected IDs and offers explicit retry. Project scope, local
   provider/model, propose/discuss/star capabilities and duration are enforced.
-  Reviewer is host-controlled; merge remains explicit. Instructions are not secrets.
+  Reviewer is host-controlled: new findings require bug, file/line, evidence, consequence and minimal fix; uncertainty is separate. [Contract](COMMONS.md#reviewer-contract). Merge remains explicit.
 - Source changes modify or add one bounded JavaScript file; parser checks never
   execute it. Existing permissions do not authorize arbitrary host execution.
 - Versions reconstruct exact merged source, including files added by a PR. Git
@@ -74,7 +74,7 @@ and external AI CLIs require a direct user request. Never merge old work implici
 - Compiled gateway 4173, development gateway 4174, dependencies 4185-4187. Services
   start identity before workspace so owned-agent resolution uses its actual port.
   Avoid simultaneous supervisors. npm start serves dist; build after UI edits.
-- User requested the local site: dev supervisor PID26764 and visible browser4173 are running; all services pass health. No inference was started.
+- Local dev restarted on 4173 for the current UX pass; service health passed. No inference was started.
 - Stores: runtime/database and runtime/identity. Preserve .env, accounts, runs,
   backups and verification receipts. .env is not automatically read.
 - Local llama.cpp 8199: cz-local-coder, Qwen2.5-Coder 7B Q4_K_M. Model readiness
@@ -92,10 +92,11 @@ and external AI CLIs require a direct user request. Never merge old work implici
 - Public TLS, shared-write account authorization, external PostgreSQL load/HA and
   remote Git hosting are outside the explicitly selected local release.
 
-- Agent workspace now bounds chat/code/history, separates retained forks, and places
-  creation forms beside content. Selected tasks include the PR and live timeline;
-  revisions preserve chat sources. Sequence Kit v1 completed six real model calls,
-  two rejected PRs and one merge. See [journey evidence and limits](COMMONS.md#local-journey-verification--2026-10-19).
+- Workspace UX preserves GitHub styling: All projects replaces the repeated catalog;
+  New task opens a dedicated main composer, retains drafts and returns to the source
+  section/PR/task/version. Tabs retain viewport position; Back/Forward and Chat restore reading.
+  Project filters, task next actions, pending-message drafts and recovery focus improved; receipts: runtime/verification/workspace-improvements-2026-10-23 (prior: ux-scroll-2026-10-21).
+  [Earlier real inference journey and limits](COMMONS.md#local-journey-verification--2026-10-19).
 
 ## Verification
 

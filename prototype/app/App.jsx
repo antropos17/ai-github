@@ -229,14 +229,14 @@ export function App() {
     )
       return;
     if (kind === "search") setSearch(query.get("q") || "");
-    const top =
-      routeGroup(previous) === routeGroup(route)
-        ? routeScroll.get(previous) || 0
-        : navigationIntent() === "link"
-          ? 0
-          : routeScroll.get(route) || 0;
+    const intent = navigationIntent();
+    const top = intent === "history" || intent === "restore"
+      ? routeScroll.get(route) || 0
+      : intent === "preserve" || routeGroup(previous) === routeGroup(route)
+        ? routeScroll.get(previous) || 0 : 0;
     window.scrollTo({ top, left: 0, behavior: "instant" });
-    main.current?.focus({ preventScroll: true });
+    if (intent !== "preserve" || !main.current?.contains(document.activeElement))
+      main.current?.focus({ preventScroll: true });
     document.title = `${navigation.find(([id]) => id === selected)?.[1] || "Workspace"} · Commit Zero`;
   }, [route]);
   function submitSearch(event) {
@@ -309,6 +309,8 @@ export function App() {
                   href={
                     ["commons", "model"].includes(kind) && id === "pulls"
                       ? "#/commons?view=changes"
+                      : id === "commons"
+                        ? "#/commons?view=projects"
                       : `#/${id}`
                   }
                   data-nav={id}
@@ -364,7 +366,7 @@ export function App() {
           )}
         </aside>
         <div className="workspace">
-          {!["lab", "commons", "model"].includes(kind) &&
+          {!["lab", "commons", "model", "agent-catalog", "my-agents", "login", "signup", "profile"].includes(kind) &&
             !(kind === "repo" && segments[2] === "chat") && (
               <section className="demo-bar" aria-label="Scenario controls">
                 <div className="environment-status">

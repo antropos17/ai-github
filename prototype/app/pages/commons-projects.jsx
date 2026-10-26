@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useId, useRef, useState } from "react";
 import { ProjectMark, projectKind } from "../components/project-mark.jsx";
 import { RecordedTime } from "./commons-panels.jsx";
 
-export function ProjectForm({ source, pending, act }) {
+export function ProjectForm({ source, pending, act, addressRef }) {
+  const addressHintId = useId();
   const [id, setId] = useState(""),
     [name, setName] = useState(""),
     [description, setDescription] = useState(""),
@@ -28,14 +29,23 @@ export function ProjectForm({ source, pending, act }) {
         <label>
           Project address
           <input
+            ref={addressRef}
             required
             pattern="[a-z][a-z0-9-]{1,47}"
+            minLength={2}
             maxLength={48}
+            autoCapitalize="none"
+            spellCheck={false}
+            aria-describedby={addressHintId}
             value={id}
             onChange={(e) => setId(e.target.value)}
             placeholder="my-project"
           />
         </label>
+        <p id={addressHintId} className="commons-meta">
+          2–48 characters. Start with a lowercase letter; use lowercase letters,
+          numbers, or hyphens. This becomes the project's address.
+        </p>
         <label>
           Project name
           <input
@@ -68,30 +78,34 @@ export function ProjectForm({ source, pending, act }) {
         <p className="commons-meta">
           {source
             ? `Copies current files at v${source.revision}; retains their source hash.`
-            : "Starts with a README and an empty JavaScript module. Run an agent task to implement it."}
+            : "Creates a README and an empty JavaScript module. Then choose New task to ask an agent to implement it."}
         </p>
       </form>
     </section>
   );
 }
 export function Projects({ projects, jobs }) {
+  const searchInput = useRef(null);
   const [query, setQuery] = useState(""),
     [kind, setKind] = useState("all");
+  const searchTerm = query.trim().toLowerCase();
   const shown = projects.filter(
     (p) =>
-      `${p.name} ${p.description || ""}`
+      `${p.id} ${p.name} ${p.description || ""}`
         .toLowerCase()
-        .includes(query.toLowerCase()) &&
+        .includes(searchTerm) &&
       (kind === "all" || projectKind(p).toLowerCase() === kind),
   );
   return (
     <>
-      <div className="commons-project-filters">
+      <div className="commons-project-filters" role="search" aria-label="Projects">
         <label>
           Find a project
           <input
             type="search"
+            ref={searchInput}
             value={query}
+            placeholder="Name, address, or description"
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
@@ -103,6 +117,23 @@ export function Projects({ projects, jobs }) {
             <option value="library">Libraries</option>
           </select>
         </label>
+      </div>
+      <div className="commons-actions">
+        <span className="commons-meta" role="status">
+          {shown.length} of {projects.length} projects
+        </span>
+        <button
+          className="btn"
+          type="button"
+          disabled={!query && kind === "all"}
+          onClick={() => {
+            setQuery("");
+            setKind("all");
+            searchInput.current?.focus({ preventScroll: true });
+          }}
+        >
+          Clear filters
+        </button>
       </div>
       <ul className="commons-project-list" aria-label="Workspace projects">
         {shown.map((p) => (
@@ -119,7 +150,13 @@ export function Projects({ projects, jobs }) {
           </li>
         ))}
       </ul>
-      {!shown.length && <p>No projects match these filters.</p>}
+      {!shown.length && (
+        <p className="commons-empty">
+          {projects.length
+            ? "No projects match these filters. Change your search or clear the filters."
+            : "No projects yet. Use New project to create your first workspace."}
+        </p>
+      )}
     </>
   );
 }

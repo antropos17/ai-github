@@ -25,6 +25,7 @@ test("signed-out saved-author links retain identity and require an explicit buil
   );
   const missing = "00000000-0000-4000-8000-000000000001";
   await page.goto(`/#/commons/safe-timer?view=tasks&agent=${missing}`);
+  await page.getByRole("button", { name: "New task", exact: true }).click();
   const initial = await state(page);
   await task(page).fill("Fixture author draft. Never submit it.");
   await expect(select(page)).toHaveValue(missing);
@@ -103,6 +104,7 @@ async function open(page, id) {
   await page.evaluate((id) => {
     location.hash = `/commons/safe-timer?view=tasks&agent=${id}`;
   }, id);
+  await page.getByRole("button", { name: "New task", exact: true }).click();
   await expect(task(page)).toBeVisible();
   await task(page).fill("Fixture author draft. Never submit it.");
 }

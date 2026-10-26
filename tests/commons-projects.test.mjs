@@ -35,6 +35,8 @@ function modelFixture(prompts = []) {
             message: "Fixture approval with runtime untested.",
             generalMessage: "Fixture review.",
             approve: true,
+            findings: [],
+            limitations: ["Runtime behavior was not tested."],
           };
       return {
         text: JSON.stringify(data),

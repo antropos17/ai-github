@@ -684,7 +684,7 @@ test("React workspace preserves reading state, completes the scenario, and suppo
     [...doc.querySelectorAll(".agent-readiness a")]
       .find((a) => a.textContent === "Create agent task")
       .getAttribute("href"),
-    /^#\/commons\?agent=/,
+    /^#\/commons\?view=compose&agent=/,
   );
   [...doc.querySelectorAll("button")]
     .find((b) => b.textContent === "Check model readiness")
@@ -850,12 +850,12 @@ test("React workspace preserves reading state, completes the scenario, and suppo
   ).set.call(chatInput, "<img src=x onerror=alert(1)> retained draft");
   chatInput.dispatchEvent(new window.Event("input", { bubbles: true }));
   await until(() => !doc.querySelector(".commons-compose button").disabled);
-  [...doc.querySelectorAll(".commons-heading button")]
+  [...doc.querySelectorAll(".commons-toolbar button")]
     .find((b) => b.textContent === "Pause updates")
     .click();
   await until(
     () =>
-      doc.querySelector(".commons-heading button").textContent ===
+      doc.querySelector(".commons-toolbar button").textContent ===
       "Resume updates",
   );
   const chatRun = (
@@ -915,7 +915,7 @@ test("React workspace preserves reading state, completes the scenario, and suppo
     doc.querySelectorAll('.commons img[src="x"], .commons img[onerror]').length,
     0,
   );
-  assert.ok(doc.querySelector(".commons .project-model-mark img"));
+  assert.equal(doc.querySelector("h1").textContent, "Agent workspace");
   await assertAccessible();
   window.location.hash = "/repo/safe-timer/chat";
   await until(() =>
@@ -1000,6 +1000,8 @@ test("React workspace preserves reading state, completes the scenario, and suppo
     .click();
   await until(() => !doc.querySelector(".commons-start .commons-source"));
   assert.equal(doc.activeElement, taskInput);
+  projectSection("Chat").click();
+  await until(() => Boolean(doc.querySelector(".commons-message")));
   createFromMessage();
   await until(() =>
     Boolean(doc.querySelector(".commons-start .commons-source")),
@@ -1112,7 +1114,9 @@ test("React workspace preserves reading state, completes the scenario, and suppo
     ),
   );
   assert.equal(doc.activeElement, doc.querySelector("#commons-task"));
-  [...issueArticle.querySelectorAll("button")]
+  projectSection("Issues (1)").click();
+  await until(() => Boolean(doc.querySelector(".commons-issues article")));
+  [...doc.querySelector(".commons-issues article").querySelectorAll("button")]
     .find((button) => button.textContent === "Close issue")
     .click();
   await until(() => !doc.querySelector(".commons-issues article"));
@@ -1489,6 +1493,14 @@ test("React workspace preserves reading state, completes the scenario, and suppo
     /Retained task source/,
   );
   assert.equal(doc.activeElement, doc.querySelector("#commons-task"));
+  [...doc.querySelectorAll(".commons-heading button")]
+    .find((button) => button.textContent.startsWith("Back to Pull requests"))
+    .click();
+  await until(() =>
+    doc.querySelector(".commons-pull h2")?.textContent.includes("Fixture approved only"),
+  );
+  assert.match(window.location.hash, /view=changes&pull=fixture-approved/);
+  assert.equal(doc.querySelector(".commons-start").hidden, true);
   window.location.hash = "/commons/ui-library?view=tasks&task=missing";
   await until(() =>
     doc

@@ -35,6 +35,9 @@ function fixture(options = {}) {
             message: "Fixture review, not an inference.",
             generalMessage: "Fixture review summary.",
             approve: options.approve !== false,
+            findings: [],
+            limitations: ["Runtime behavior was not tested."],
+            ...options.review,
           };
       return {
         text: JSON.stringify(reply),
@@ -101,6 +104,8 @@ test("Commons persists scoped conversations, actual fork/copy/PR/review and guar
   const p = s.projects.find((p) => p.id === "safe-timer"),
     pr = p.prs[0];
   assert.equal(pr.status, "approved");
+  assert.deepEqual(pr.review.findings, []);
+  assert.deepEqual(pr.review.limitations, ["Runtime behavior was not tested."]);
   const task = taskHistory(s, "safe-timer")[0];
   assert.equal(task.phase, "Calls finished");
   assert.equal(task.outcome, "Awaiting operator merge");
@@ -452,6 +457,92 @@ test("Commons retains rejected output, denies unapproved merges and parses code 
       .statusCode,
     409,
   );
+});
+
+test("Commons retains actionable findings and carries them into a revision task", async (t) => {
+  const finding = {
+    bug: "The change removes the public clock export.",
+    path: "clock.js",
+    side: "after",
+    line: 1,
+    evidence:
+      "The proposed file exports only fixture; existing clock imports cannot resolve.",
+    consequence: "Consumers cannot import the clock module's original API.",
+    fix: "Preserve the existing exports and change only the faulty clock behavior.",
+  };
+  const prompts = [];
+  const options = {
+    review: { approve: false, findings: [finding] },
+    inspectPrompt: (prompt) => prompts.push(prompt),
+  };
+  const { read, post } = await setup(t, fixture(options));
+  await post("jobs", { repoId: "safe-timer", task: "Fix the clock" });
+  const state = await finished(read);
+  const project = state.projects.find((item) => item.id === "safe-timer");
+  const pull = project.prs[0];
+  assert.equal(state.jobs[0].status, "completed");
+  assert.equal(pull.status, "changes-requested");
+  assert.deepEqual(pull.review.findings, [finding]);
+  assert.equal(pull.review.codeHash, pull.hash);
+  assert.equal(project.files["clock.js"], pull.before);
+  assert.equal(
+    (await post("merge", { repoId: project.id, prId: pull.id })).statusCode,
+    409,
+  );
+  options.proposal = { content: "export const fixture = 2;" };
+  await post("jobs", {
+    repoId: project.id,
+    sourcePrId: pull.id,
+    task: "Address the review findings",
+  });
+  await finished(read);
+  assert.ok(
+    prompts[2].includes(`${finding.path}:${finding.line} (${finding.side})`),
+  );
+  assert.ok(prompts[2].includes(finding.bug));
+  assert.ok(prompts[2].includes(finding.fix));
+});
+
+test("Commons retains invalid reviewer output without applying an approval or enabling merge", async (t) => {
+  const options = { review: { approve: true, findings: [] } };
+  const { read, post } = await setup(t, fixture(options));
+  const finding = {
+    bug: "A concrete fixture bug.",
+    path: "clock.js",
+    side: "after",
+    line: 1,
+    evidence: "A specific fixture input follows the changed branch.",
+    consequence: "The fixture result is incorrect.",
+    fix: "Correct that branch.",
+  };
+  for (const [index, review] of [
+    { approve: true, findings: [finding] },
+    { approve: false, findings: [{ ...finding, line: 99 }] },
+  ].entries()) {
+    options.review = review;
+    options.proposal = { content: `export const fixture = ${index + 10};` };
+    await post("jobs", {
+      repoId: "safe-timer",
+      task: "Reject an invalid reviewer contract",
+    });
+    const state = await finished(read);
+    const job = state.jobs.at(-1);
+    const project = state.projects.find((item) => item.id === "safe-timer");
+    const pull = project.prs.at(-1);
+    assert.equal(job.status, "failed");
+    assert.equal(job.responses.length, 2);
+    assert.deepEqual(
+      JSON.parse(job.responses[1].text).findings,
+      review.findings,
+    );
+    assert.equal(pull.review, null);
+    assert.equal(pull.status, "open");
+    assert.equal(project.files["clock.js"], pull.before);
+    assert.equal(
+      (await post("merge", { repoId: project.id, prId: pull.id })).statusCode,
+      409,
+    );
+  }
 });
 
 test("Commons cancellation and shared inference lease prevent late writes and competing lab jobs", async (t) => {

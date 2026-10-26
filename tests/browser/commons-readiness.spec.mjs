@@ -33,6 +33,7 @@ async function openRoom(page) {
     if (request.method() !== "GET") writes.push(request.url());
   });
   await page.goto("/#/commons/safe-timer?view=tasks");
+  await page.getByRole("button", { name: "New task", exact: true }).click();
   await expect(check(page)).toBeEnabled();
   await page
     .getByLabel("Task", { exact: true })

@@ -28,12 +28,39 @@ weight training. No scripted dialogue or fake fallback responses are used.
 Raw responses, including rejected/incomplete outputs, remain in the job export.
 The next explicitly started task sees recent conversation, not unlimited memory.
 
+### Reviewer contract
+
+New reviews contain up to five concrete findings. Each identifies the bug, exact
+file and 1-based line in **Before** or **After**, triggering input or code-path
+evidence, observable consequence and minimal correction. The Reviewer prompt
+excludes personal remarks, toxicity, style preferences and speculative refactors.
+Missing context and uncertainty belong in separate limitations, not invented bugs.
+An empty findings list means no concrete defects were identified; it is not proof
+of runtime correctness. Syntax checking still never executes the proposed code.
+
+The host validates every nested field, file/line reference and decision. Findings
+or failed syntax cannot accompany approval. A rejection without findings needs an
+explicit limitation. Malformed/incomplete reviews remain in raw job responses but
+cannot approve the PR or enable merge. Structured findings also reach subsequent
+revision tasks through bounded, explicitly marked context excerpts (1800 characters
+per previous review); the full review remains in the PR. Source is supplied in
+numbered blocks without dropping lines. Old message-only reviews remain readable and keep their original
+hash/revision merge guards; they are not rewritten by the new contract.
+
+PRs show findings and limitations in open sections using the existing repository
+UI. The contract is enforced by `server/commons/review.mjs`; fixtures validate its
+boundaries, not the model's ability to identify every bug or avoid false positives.
+
 The UI polls every 2.5 seconds and supports pause/resume. Chat follows new messages
 while the reader is at the bottom; reading older messages preserves the anchor.
 It initially renders the latest 40 saved messages. **Show earlier messages** reveals
 up to 40 more without losing the current reading position; all messages remain in
 the full snapshot and export. This bounds initial DOM work, not network transfer.
-Failed/stale submissions retain operator drafts. Changes,
+Failed/stale submissions and edits made during a pending Send retain operator
+drafts. Send feedback and failures appear beside the message field. Loading the
+final older-message batch keeps its reading anchor and keyboard entry. Explicit
+connection retry restores entry without scrolling or overriding another input.
+Changes,
 current files, forks, syntax checks and inference receipts accompany discussion.
 The task form checks local model readiness when opened and offers **Check model**
 to refresh it after starting or stopping the provider. The run action stays
@@ -73,8 +100,20 @@ start inference. The server still checks readiness when a task is submitted.
 
 ## Versions and timeline
 
-Project workspaces open with Code and provide Tasks, Pull requests, Chat, Versions and
-Timeline tabs. General retains the shared conversation and cross-project activity.
+The Agent workspace entry opens Projects. Project workspaces open with Code and
+provide Issues, Tasks, Pull requests, Chat, Versions, Forks and Timeline tabs.
+All projects returns to the catalog; the current project name identifies scope.
+General chat retains the shared conversation and cross-project activity.
+Section changes update the URL, so reload preserves the selected section.
+New task opens a dedicated composer in the main work area; the task form is absent
+from reading views. It stays mounted to retain drafts across section changes.
+The composer names its project; tasks from General require explicit selection.
+Back returns to the originating section and selected PR, version or task.
+Section changes retain document position and the selected control. Focusing the
+task field does not scroll the page. Browser Back/Forward restores each route's
+saved position; composer Back restores where it was opened. The workbench keeps
+a viewport-height minimum so short sections do not collapse the document.
+Returning to Chat restores the internal message position while reading history.
 The vN label is the persisted project revision, not an invented SemVer release.
 Only a successful merge increments it; comments, reviews, forks and rejected
 proposals do not create versions. `shared/commons-history.mjs` reconstructs exact
@@ -102,7 +141,7 @@ This is a read projection of existing records, with no migration or model calls.
 
 ## Tasks from discussion
 
-**Create task** on a chat message attaches it to the permanent task form without
+**Create task** on a chat message opens the task composer and attaches it without
 starting inference or overwriting the instruction draft. **Remove source** detaches
 it. **Run agents** remains the explicit start action. Source text, actor, channel
 and time appear inline in the task, its timeline and resulting PR; the original
@@ -124,6 +163,13 @@ context through the existing validated link; the suggested text does not replace
 that retained context. Selecting the suggestion never starts inference.
 
 ## Projects, issues and owned agents
+
+Project search accepts a name, address or description and ignores surrounding
+spaces. Its result count and **Clear filters** distinguish a filtered empty result
+from an empty workspace. Address fields explain the accepted format. Task lists
+show the recorded outcome and next action before source/evidence: inspect the
+timeline, review the proposed PR, or open the merged version. Finished calls never
+imply that a proposal was merged. Empty task lists offer **Create first task**.
 
 [The release contract](RELEASE.md) describes project creation/fork/archive, normalized
 issues, comments, PR close/reopen, revision tasks, owned-agent restrictions, Git

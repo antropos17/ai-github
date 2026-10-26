@@ -4,6 +4,12 @@
 
 Operate/read mode. A restrained developer workspace, derived from the repository, file browser and pull-request conventions the user explicitly requested. Product identity comes from visible code, provenance and agent identities. Avoid marketing heroes and ornamental motion. All product UI, scenario copy, errors, dates and navigation are English; preserve user-entered profile text.
 
+Preserve the existing GitHub-like visual system. UX improvements change entry
+points, context and competing actions; they do not authorize a new palette,
+cards, button styling, typography or navigation appearance. The workspace entry
+opens Projects and its creation form; General chat remains an explicit section.
+Scenario playback controls belong on scenario pages, not account/agent settings.
+
 ## Tokens
 
 - Semantic color roles live in `prototype/theme.css`, following [GitHub Primer](https://primer.style/product/primitives/color/). Components use these roles rather than literal colors.
@@ -75,7 +81,19 @@ the same top anchor. The sidebar repository section has one 32px top interval.
 Mobile repository filters and standalone search/metadata actions have a minimum
 44px hit area; native fields use the same semantic surface and text tokens.
 
-One React root owns all active pages and preview controls. Preserve component/node identity, text selection, code scroll, visible sections and focus when the scenario advances or refreshes. Use keyed React updates within the same route, retain the reading anchor when events are prepended, and restore each route's document scroll on return. A new run starts at the top. Route navigation moves focus to main without another scroll. Make pending, offline, stale-version, empty and saved states explicit. Retain previous data when the server is unavailable. Mobile controls target 44px; code and page-tab strips may scroll internally, the page must not overflow. Reserve scrollbar space and stable control widths. Mobile navigation exposes the same destinations as desktop without a disclosure or section selector. The skip link moves focus without replacing the current route. Code panels are named regions, selected files expose aria-current, and diff rows include screen-reader labels for additions and deletions.
+One React root owns all active pages and preview controls. Preserve component/node identity, text selection, code scroll, visible sections and focus when the scenario advances or refreshes. Use keyed React updates within the same route, retain the reading anchor when events are prepended, and restore each route's document scroll on return. A new run starts at the top. Fresh page navigation moves focus to main without another scroll; section changes keep their chosen control. Explicit form focus must prevent document scrolling. Make pending, offline, stale-version, empty and saved states explicit. Retain previous data when the server is unavailable. Mobile controls target 44px; code and page-tab strips may scroll internally, the page must not overflow. Reserve scrollbar space and stable control widths. Mobile navigation exposes the same destinations as desktop without a disclosure or section selector. The skip link moves focus without replacing the current route. Code panels are named regions, selected files expose aria-current, and diff rows include screen-reader labels for additions and deletions.
+
+Commons captures document position before changing sections and renders the URL's
+selected view in one commit. Back/Forward restores each destination's saved
+position; composer Back restores its originating position. A viewport-height
+workbench prevents shorter sections from collapsing the document under the
+reader. Returning to Chat restores its internal reading position.
+
+Chat preserves any edits made while an earlier message is being sent. Pending,
+sent and failed feedback stays beside the composer. Loading the final history
+batch preserves the visible message anchor as its control disappears, then
+returns keyboard entry to the message region. Manual connection recovery restores
+entry without scrolling or overriding another chosen control.
 
 A settled initial connection error clears the main region's busy state and shows
 Unavailable in the scenario status. Explicit keyboard retry returns focus to main
@@ -139,15 +157,21 @@ The agent workspace uses familiar Code / Tasks / Pull requests / Chat / Versions
 Timeline tabs. Tasks use divided rows with the instruction, actual execution state,
 patch outcome and explicit PR/timeline links. Never equate completed calls with a
 merged improvement. Project name, current vN, stars and forks lead; avoid introductory
-paragraphs. Create task attaches a chat message to the visible form without
-starting work or overwriting the draft. Source text stays open in tasks, task
+paragraphs. New task opens a dedicated composer in the main work area; reading
+code, PRs and chat does not show a competing task form. Create task on a message
+opens that composer without starting work or overwriting the draft. Source text stays open in tasks, task
 timelines and PRs. Run agents is the separate start action.
 General keeps shared chat, tasks, pull requests and timeline. Source files
 are first in project workspaces; the repository Agent chat entry opens chat.
 Versions show exact retained source with its author and PR; vN means project
 revision, not a semantic release. Timeline rows show full text and inference
-receipts inline. New task has a permanent form below the active project section.
-Execution limits stay visible below it and at the merge decision. PR source changes
+receipts inline. The mounted task form retains its draft across section changes.
+All projects and the current project name establish location without repeating
+the entire project catalog. All section tabs stay visible, and their URL preserves
+the selected section on reload. The composer identifies the project explicitly;
+general tasks require project selection. Back returns to the originating section
+and selected PR, version or task. Execution limits stay visible in the supporting
+column and at the merge decision. PR source changes
 show Before and After side by side on desktop and stacked on mobile.
 
 All navigation and supporting content must have visible, stable places. Do not
@@ -268,3 +292,9 @@ links retain the selected ID on reload. Fork identity and revision-source PR sta
 visible. Revision forms carry the original message and issue into the new task.
 Project timelines also retain chat, task start, fork and terminal outcomes; task
 feeds include the exact source message even when it originated in General.
+
+Task lists place the recorded outcome and next action before supporting evidence:
+timeline for ongoing or failed work, PR review for proposed changes, and the
+retained version after merge. Empty lists offer task creation; a missing selected
+record remains a distinct state. Project search matches names, addresses and
+descriptions, exposes a result count, and offers Clear filters with stable focus.

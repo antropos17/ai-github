@@ -14,6 +14,11 @@ export const browserGroups = Object.freeze([
     files: Object.freeze([
       "agent-catalog.spec.mjs",
       "commons-first-run.spec.mjs",
+    ]),
+  }),
+  Object.freeze({
+    name: "commons-recovery",
+    files: Object.freeze([
       "commons-project-recovery.spec.mjs",
       "commons-provider.spec.mjs",
     ]),
